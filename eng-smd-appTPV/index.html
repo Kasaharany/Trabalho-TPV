@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eng SMD - Sistema Técnico v2.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; }
+        .card { background-color: white; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+        .btn { transition: background-color 0.2s ease-in-out; border-radius: 0.375rem; padding: 0.5rem 1rem; font-weight: 600; text-align: center; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; }
+        .btn-sm { padding: 0.25rem 0.75rem; font-size: 0.875rem; gap: 0.25rem;}
+        .btn-primary { background-color: #1a73e8; color: white; }
+        .btn-primary:hover:not(:disabled) { background-color: #1865c9; }
+        .btn-primary:disabled { background-color: #a0c3f0; cursor: not-allowed; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .btn-secondary:hover:not(:disabled) { background-color: #5a6268; }
+        .btn-secondary:disabled { background-color: #adb5bd; cursor: not-allowed; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        .btn-danger:hover:not(:disabled) { background-color: #c82333; }
+        .btn-danger:disabled { background-color: #f1b0b7; cursor: not-allowed; }
+        .tab-button { transition: all 0.2s ease-in-out; border-bottom: 2px solid transparent; }
+        .tab-button.active { border-color: #1a73e8; color: #1a73e8; background-color: #e8f0fe;}
+        .modal-backdrop { background-color: rgba(0,0,0,0.5); z-index: 40; }
+        .modal { max-height: 90vh; overflow-y: auto; z-index: 50; }
+        .form-input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; transition: border-color 0.2s, box-shadow 0.2s; font-size: 0.875rem; } /* Borda cinza mais clara */
+        .form-input:focus { outline: none; border-color: #1a73e8; box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2); }
+        .form-input:read-only { background-color: #e9ecef; cursor: not-allowed; }
+        .form-label { display: block; text-sm font-medium text-gray-700 mb-1;}
+        .form-file { font-size: 0.875rem; color: #555; }
+        .form-file::file-selector-button { /* Estilo do botão interno */
+             margin-right: 0.75rem; padding: 0.375rem 0.75rem; border-radius: 9999px; border-width: 0px; font-size: 0.875rem; font-weight: 600; background-color: #e8f0fe; color: #1a73e8; cursor: pointer; transition: background-color 0.2s;
+        }
+        .form-file::file-selector-button:hover { background-color: #d0e1fd; }
+        .action-btn { font-size: 0.75rem; padding: 0.125rem 0.375rem; margin-right: 0.25rem; display: inline-flex; align-items: center; gap: 0.2rem; }
+        .hidden-field { display: none; }
+        /* Cores alternadas e hover para tabelas */
+        tbody tr:nth-child(even) { background-color: #f9fafb; }
+        tbody tr:hover { background-color: #f3f4f6; }
+        /* Ícones SVG */
+        .icon { width: 1em; height: 1em; } 
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div id="app-container">
+        <div id="auth-screen" class="min-h-screen flex items-center justify-center p-4">
+            <div class="w-full max-w-md card p-8">
+                <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">Eng SMD</h1> <p class="text-center text-gray-500 mb-6">Acesso ao Sistema Técnico</p>
+                <form id="login-form">
+                    <div class="mb-4"><label for="login-matricula" class="form-label">Matrícula</label><input type="text" id="login-matricula" required class="form-input"></div>
+                    <div class="mb-6"><label for="login-password" class="form-label">Palavra-passe</label><input type="password" id="login-password" required class="form-input"></div>
+                    <button type="submit" class="w-full btn btn-primary">Entrar</button>
+                </form> <p class="text-center text-xs text-gray-500 mt-4">Contas geridas por um administrador.</p>
+            </div>
+        </div>
+
+        <div id="main-app" class="hidden">
+            <header class="bg-white shadow-md p-4 flex justify-between items-center sticky top-0 z-10">
+                <h1 class="text-xl font-bold text-gray-800">Eng SMD</h1>
+                <div> <span id="user-identifier" class="text-sm text-gray-600 mr-4"></span> <button id="logout-button" class="text-sm font-semibold text-red-600 hover:text-red-800">Sair</button> </div>
+            </header>
+
+            <main class="p-4 md:p-8 max-w-7xl mx-auto pb-12">
+                <div class="flex border-b mb-6 space-x-1 sm:space-x-4 overflow-x-auto">
+                    <button data-tab="novo-registo" class="main-tab-button py-2 px-3 sm:px-4 text-center font-semibold border-b-2 active whitespace-nowrap">Novo Registro</button> 
+                    <button data-tab="historico" class="main-tab-button py-2 px-3 sm:px-4 text-center font-semibold border-b-2 whitespace-nowrap">Histórico</button>
+                    <button data-tab="graficos" class="main-tab-button py-2 px-3 sm:px-4 text-center font-semibold border-b-2 whitespace-nowrap">Gráficos</button>
+                    <button id="admin-tab-button" data-tab="admin" class="main-tab-button py-2 px-3 sm:px-4 text-center font-semibold border-b-2 hidden whitespace-nowrap">Gerir Utilizadores</button>
+                </div>
+
+                <div id="novo-registo-tab" class="tab-content">
+                    <div class="card p-6 w-full max-w-3xl mx-auto">
+                        <h2 class="text-2xl font-bold mb-6">Registrar Nova Manutenção</h2> 
+                        <form id="maintenance-form" class="space-y-4">
+                            <div><label for="mf-tecnico" class="form-label">Nome do Técnico (Automático)</label><input type="text" id="mf-tecnico" required readonly class="form-input bg-gray-100 cursor-not-allowed mt-1"></div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div><label for="mf-maquina" class="form-label">Máquina</label><select id="mf-maquina" required class="form-input bg-white mt-1"><option value="">Selecione...</option><option>DEK</option><option>GPX C II</option><option>KOH YOUNG SPI</option> <option>KOH YOUNG AOI</option><option>NXT II</option><option>XPA 243E</option><option>XPB 243E</option><option>PYRAMAX 125A</option><option>TR7007 SPI</option><option>CM602 L</option><option>CM101 L</option><option>JUKI JM20</option><option>TR7500 AOI</option><option>OMRON</option><option>NPM DX</option><option>NPM WX</option><option>SAKI SPI</option><option>VITROX AOI</option></select></div>
+                                <div><label for="mf-linha" class="form-label">Linha</label><select id="mf-linha" required class="form-input bg-white mt-1"><option value="">Selecione...</option><option>IA 1</option><option>IA 2</option><option>IA 3</option><option>SA1</option><option>SB1</option><option>S02</option><option>S03</option><option>S04</option><option>S05</option><option>S06</option><option>S07</option><option>S08</option><option>S09</option><option>S10</option></select></div>
+                                <div><label for="mf-modulo" class="form-label">Módulo</label><select id="mf-modulo" required class="form-input bg-white mt-1"><option value="">Selecione...</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div><label for="mf-data" class="form-label">Data</label><input type="date" id="mf-data" required class="form-input mt-1"></div>
+                                <div><label for="mf-inicio" class="form-label">Hora Início</label><input type="time" id="mf-inicio" required class="form-input mt-1"></div>
+                                <div><label for="mf-fim" class="form-label">Hora Término</label><input type="time" id="mf-fim" required class="form-input mt-1"></div>
+                            </div>
+                            <div><label for="mf-tipo" class="form-label">Tipo Manutenção</label><select id="mf-tipo" required class="form-input bg-white mt-1"><option>Preventiva</option><option>Corretiva</option><option>Preditiva</option><option>Instalação</option><option>Outra</option></select></div>
+                            <div id="mf-causa-container" class="hidden-field"> <label for="mf-causa" class="form-label">Causa da Falha</label> <input type="text" id="mf-causa" placeholder="Ex: Desgaste natural, Falha componente X, ..." class="form-input mt-1"> </div>
+                            <div><label for="mf-correcao" class="form-label">Descrição da Correção</label><textarea id="mf-correcao" rows="3" required class="form-input mt-1"></textarea></div>
+                            <div><label for="mf-pecas" class="form-label">Peças Utilizadas (Opcional)</label><textarea id="mf-pecas" rows="2" placeholder="Listar peças e quantidades (Ex: Sensor XPTO x1, Correia YZ x2)" class="form-input mt-1"></textarea></div>
+                            <div><label for="mf-obs" class="form-label">Observações</label><textarea id="mf-obs" rows="2" class="form-input mt-1"></textarea></div>
+                            <div><label for="mf-anexo" class="form-label">Anexar Ficheiro (Imagem ou PDF)</label><input type="file" id="mf-anexo" accept="image/*,.pdf" multiple class="form-input form-file mt-1"/></div>
+                            <div class="text-right pt-2"><button type="submit" id="save-maintenance-btn" class="btn btn-primary px-6">Guardar</button></div>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="historico-tab" class="tab-content hidden">
+                    <div class="card p-6">
+                        <div class="flex flex-wrap justify-between items-center mb-4 gap-4"> <h2 class="text-2xl font-bold">Histórico de Manutenções</h2> <div class="flex items-center gap-2"> <select id="export-month" class="form-input !w-auto text-sm py-1"></select> <select id="export-year" class="form-input !w-auto text-sm py-1"></select> <button id="export-excel-btn" class="btn btn-primary btn-sm py-1"> <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg> Exportar Mês </button> </div> </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 mb-4 p-4 border rounded-md bg-gray-50">
+                             <div><label for="filter-maquina" class="form-label text-xs">Máquina</label><select id="filter-maquina" class="form-input !py-1 mt-1 text-xs"><option value="">Todas</option><option>DEK</option><option>GPX C II</option><option>KOH YOUNG SPI</option> <option>KOH YOUNG AOI</option><option>NXT II</option><option>XPA 243E</option><option>XPB 243E</option><option>PYRAMAX 125A</option><option>TR7007 SPI</option><option>CM602 L</option><option>CM101 L</option><option>JUKI JM20</option><option>TR7500 AOI</option><option>OMRON</option><option>NPM DX</option><option>NPM WX</option><option>SAKI SPI</option><option>VITROX AOI</option></select></div>
+                             <div><label for="filter-linha" class="form-label text-xs">Linha</label><select id="filter-linha" class="form-input !py-1 mt-1 text-xs"><option value="">Todas</option><option>IA 1</option><option>IA 2</option><option>IA 3</option><option>SA1</option><option>SB1</option><option>S02</option><option>S03</option><option>S04</option><option>S05</option><option>S06</option><option>S07</option><option>S08</option><option>S09</option><option>S10</option></select></div>
+                             <div><label for="filter-tipo" class="form-label text-xs">Tipo Manut.</label><select id="filter-tipo" class="form-input !py-1 mt-1 text-xs"><option value="">Todos</option><option>Preventiva</option><option>Corretiva</option><option>Preditiva</option><option>Instalação</option><option>Outra</option></select></div>
+                             <div><label for="filter-data" class="form-label text-xs">Data Específica</label><input type="date" id="filter-data" class="form-input !py-1 mt-1 text-xs"></div>
+                             <div class="self-end"><button id="clear-filters-btn" class="btn btn-secondary btn-sm w-full">Limpar Filtros</button></div>
+                        </div>
+                        <div class="mb-4"> <input type="text" id="history-search" placeholder="Pesquisar por Técnico ou Descrição da Correção..." class="form-input"> </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left table-auto">
+                                <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
+                                    <tr>
+                                        <th class="p-3">Data</th> <th class="p-3">Técnico</th> <th class="p-3">Máquina</th> <th class="p-3">Linha</th> <th class="p-3">Mód.</th> <th class="p-3">Tipo</th> <th class="p-3" title="Horas:Minutos">Duração</th> <th class="p-3">Causa Falha</th> <th class="p-3">Correção</th> <th class="p-3">Peças</th> <th class="p-3">Anexo</th> <th class="p-3">Por</th> <th class="p-3">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-table-body"></tbody>
+                            </table>
+                            <p id="history-no-results" class="text-center p-4 text-gray-500 hidden">Nenhum registro encontrado para os filtros aplicados.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="graficos-tab" class="tab-content hidden">
+                     <div class="card p-4 mb-6 flex flex-wrap items-center gap-2 md:gap-4"> <h3 class="text-lg font-semibold w-full md:w-auto">Filtrar por Mês</h3> <select id="chart-month" class="form-input !w-auto text-sm py-1"></select> <select id="chart-year" class="form-input !w-auto text-sm py-1"></select> <button id="chart-filter-btn" class="btn btn-primary text-sm py-1">Aplicar Filtro</button> <button id="chart-reset-btn" class="btn btn-secondary text-sm py-1">Mostrar Todos</button> </div> <div class="grid grid-cols-1 lg:grid-cols-2 gap-8"> <div class="card p-6"> <h2 class="text-2xl font-bold mb-4">Manutenções / Mês</h2> <canvas id="manutencoesMensaisChart"></canvas> </div> <div class="card p-6"> <h2 class="text-2xl font-bold mb-4">Manutenções / Máquina</h2> <canvas id="manutencoesPorMaquinaChart"></canvas> </div> </div>
+                </div>
+
+                <div id="admin-tab" class="tab-content hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                        <div class="lg:col-span-2">
+                            <div class="card p-6">
+                                <h2 class="text-2xl font-bold mb-6">Criar Novo Utilizador</h2>
+                                <form id="create-user-form" class="space-y-4">
+                                    <div> <label for="cu-nome" class="form-label">Nome Completo</label> <input type="text" id="cu-nome" required class="form-input mt-1"> </div>
+                                    <div> <label for="cu-matricula" class="form-label">Matrícula</label> <input type="text" id="cu-matricula" required class="form-input mt-1"> </div>
+                                    <div> <label for="cu-password" class="form-label">Palavra-passe Temp.</label> <input type="password" id="cu-password" required class="form-input mt-1"> </div>
+                                    <div class="text-right"> <button type="submit" class="btn btn-primary">Criar Técnico</button> </div>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-3">
+                            <div class="card p-6">
+                                <h2 class="text-2xl font-bold mb-4">Utilizadores do Sistema</h2>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-sm text-left">
+                                        <thead class="bg-gray-100 text-gray-600 uppercase">
+                                            <tr> <th class="p-3">Nome</th> <th class="p-3">Matrícula</th> <th class="p-3">Estado</th> <th class="p-3">Ação</th> </tr>
+                                        </thead>
+                                        <tbody id="users-table-body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            
+            <footer class="text-center p-4 mt-8"> <p class="text-xs text-gray-400">Desenvolvido por Nicolas Yukio Kasahara</p> </footer>
+        </div>
+    </div>
+
+    <div id="edit-maintenance-modal" class="fixed inset-0 modal-backdrop items-center justify-center p-4 hidden z-40">
+        <div class="card w-full max-w-3xl p-6 modal">
+            <h2 class="text-2xl font-bold mb-6">Editar Registro de Manutenção</h2>
+            <form id="edit-maintenance-form" class="space-y-4">
+                <input type="hidden" id="edit-doc-id">
+                <div><label class="form-label">Técnico (Registro Original)</label><input type="text" id="edit-mf-tecnico" readonly class="form-input bg-gray-100 cursor-not-allowed mt-1"></div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                     <div><label for="edit-mf-maquina" class="form-label">Máquina</label><select id="edit-mf-maquina" required class="form-input bg-white mt-1"><option value="">Selecione...</option> <option>DEK</option><option>GPX C II</option><option>KOH YOUNG SPI</option> <option>KOH YOUNG AOI</option><option>NXT II</option><option>XPA 243E</option><option>XPB 243E</option><option>PYRAMAX 125A</option><option>TR7007 SPI</option><option>CM602 L</option><option>CM101 L</option><option>JUKI JM20</option><option>TR7500 AOI</option><option>OMRON</option><option>NPM DX</option><option>NPM WX</option><option>SAKI SPI</option><option>VITROX AOI</option></select></div>
+                     <div><label for="edit-mf-linha" class="form-label">Linha</label><select id="edit-mf-linha" required class="form-input bg-white mt-1"><option value="">Selecione...</option> <option>IA 1</option><option>IA 2</option><option>IA 3</option><option>SA1</option><option>SB1</option><option>S02</option><option>S03</option><option>S04</option><option>S05</option><option>S06</option><option>S07</option><option>S08</option><option>S09</option><option>S10</option></select></div>
+                     <div><label for="edit-mf-modulo" class="form-label">Módulo</label><select id="edit-mf-modulo" required class="form-input bg-white mt-1"><option value="">Selecione...</option> <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div><label for="edit-mf-data" class="form-label">Data</label><input type="date" id="edit-mf-data" required class="form-input mt-1"></div>
+                    <div><label for="edit-mf-inicio" class="form-label">Hora Início</label><input type="time" id="edit-mf-inicio" required class="form-input mt-1"></div>
+                    <div><label for="edit-mf-fim" class="form-label">Hora Término</label><input type="time" id="edit-mf-fim" required class="form-input mt-1"></div>
+                </div>
+                 <div><label for="edit-mf-tipo" class="form-label">Tipo Manutenção</label><select id="edit-mf-tipo" required class="form-input bg-white mt-1"><option>Preventiva</option><option>Corretiva</option><option>Preditiva</option><option>Instalação</option><option>Outra</option></select></div>
+                 <div id="edit-mf-causa-container" class="hidden-field"> <label for="edit-mf-causa" class="form-label">Causa da Falha</label> <input type="text" id="edit-mf-causa" class="form-input mt-1"> </div>
+                 <div><label for="edit-mf-correcao" class="form-label">Descrição da Correção</label><textarea id="edit-mf-correcao" rows="3" required class="form-input mt-1"></textarea></div>
+                 <div><label for="edit-mf-pecas" class="form-label">Peças Utilizadas</label><textarea id="edit-mf-pecas" rows="2" class="form-input mt-1"></textarea></div>
+                 <div><label for="edit-mf-obs" class="form-label">Observações</label><textarea id="edit-mf-obs" rows="2" class="form-input mt-1"></textarea></div>
+                 <p class="text-xs text-gray-500">Nota: Anexos não podem ser editados aqui.</p>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" id="cancel-edit-maintenance" class="btn btn-secondary">Cancelar</button>
+                    <button type="submit" id="save-edit-maintenance-btn" class="btn btn-primary">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script type="module">
+        // --- IMPORTS ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, doc, getDoc, getDocs, onSnapshot, query, orderBy, serverTimestamp, where, addDoc, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+        // --- CONFIG FIREBASE ---
+        const firebaseConfig = { apiKey: "AIzaSyA-siDqx6mhwGZqeN7E-oFJySf2Fr7QXGM", authDomain: "engsmdsistema-novo.firebaseapp.com", projectId: "engsmdsistema-novo", storageBucket: "engsmdsistema-novo.appspot.com", messagingSenderId: "780550032391", appId: "1:780550032391:web:e69d525969c4c752bfeea2", measurementId: "G-L6PNJRDLS6" };
+        const appId = firebaseConfig.projectId; 
+        const FAKE_DOMAIN = "@engsmd.local";
+        const mainApp = initializeApp(firebaseConfig);
+        const auth = getAuth(mainApp);
+        const db = getFirestore(mainApp);
+        const storage = getStorage(mainApp);
+        const secondaryApp = initializeApp(firebaseConfig, "secondary");
+        const secondaryAuth = getAuth(secondaryApp);
+        const usersCollection = collection(db, `artifacts/${appId}/public/data/users`);
+        const maintenanceCollection = collection(db, `artifacts/${appId}/public/data/manutencoes`);
+
+        // --- DOM Refs ---
+        const authScreen = document.getElementById('auth-screen');
+        const appScreen = document.getElementById('main-app');
+        const userIdentifierSpan = document.getElementById('user-identifier');
+        const historyTableBody = document.getElementById('history-table-body');
+        const historySearchInput = document.getElementById('history-search'); 
+        const historyNoResults = document.getElementById('history-no-results'); 
+        const editModal = document.getElementById('edit-maintenance-modal'); 
+        const editForm = document.getElementById('edit-maintenance-form'); 
+        const filterMaquina = document.getElementById('filter-maquina'); const filterLinha = document.getElementById('filter-linha'); const filterTipo = document.getElementById('filter-tipo'); const filterData = document.getElementById('filter-data'); const clearFiltersBtn = document.getElementById('clear-filters-btn');
+        const mfTipoSelect = document.getElementById('mf-tipo'); const mfCausaContainer = document.getElementById('mf-causa-container');
+        const editMfTipoSelect = document.getElementById('edit-mf-tipo'); const editMfCausaContainer = document.getElementById('edit-mf-causa-container');
+
+        // --- Estado Global ---
+        let currentUser = null; 
+        let currentUserRole = null;
+        let currentUserName = null;
+        let currentUserMatricula = null;
+        let currentMaintenanceData = []; 
+        let unsubscribeMaintenance = null;
+        
+        // --- Função Toast ---
+        function showToast(message, type = 'success', duration = 3000) { let bgColor; switch(type) { case 'error': bgColor = "#dc3545"; break; case 'warning': bgColor = "#ffc107"; break; default: bgColor = "#1a73e8"; } Toastify({ text: message, duration: duration, gravity: "top", position: "right", style: { background: bgColor, borderRadius: "6px" }, stopOnFocus: true }).showToast(); }
+        
+        // --- AUTENTICAÇÃO ---
+        onAuthStateChanged(auth, async (user) => { currentUser=user; if (user) { const userDocRef=doc(usersCollection, user.uid); const userDocSnap=await getDoc(userDocRef); if (userDocSnap.exists()) { const userData=userDocSnap.data(); if (userData.status==='inativo') { showToast("Conta desativada.", "error", 5000); signOut(auth); return; } currentUserRole=userData.role; currentUserName=userData.nome; currentUserMatricula=userData.matricula; userIdentifierSpan.textContent=`Matrícula: ${currentUserMatricula}`; document.getElementById('admin-tab-button').classList.toggle('hidden', currentUserRole !== 'admin'); authScreen.classList.add('hidden'); appScreen.classList.remove('hidden'); listenToMaintenanceRecords(); populateDateFilters('export'); setInitialDateTime(); } else { signOut(auth); } } else { currentUserRole=null; currentUserName=null; currentUserMatricula=null; authScreen.classList.remove('hidden'); appScreen.classList.add('hidden'); document.getElementById('admin-tab-button').classList.add('hidden'); initializeAdminAccount(); if (unsubscribeMaintenance) unsubscribeMaintenance(); } });
+        document.getElementById('login-form').addEventListener('submit', (e) => { e.preventDefault(); const matricula=document.getElementById('login-matricula').value; const password=document.getElementById('login-password').value; const email=matricula + FAKE_DOMAIN; signInWithEmailAndPassword(auth, email, password).catch((error) => { let msg="Erro ao entrar."; if (error.code.includes('auth/')) msg="Matrícula ou senha incorretos."; showToast(msg, "error"); }); });
+        document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
+
+        // --- LÓGICA DAS ABAS ---
+        document.querySelectorAll('.main-tab-button').forEach(button => { button.addEventListener('click', () => { document.querySelectorAll('.main-tab-button').forEach(btn => btn.classList.remove('active')); button.classList.add('active'); document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden')); document.getElementById(button.dataset.tab + '-tab').classList.remove('hidden'); if (button.dataset.tab==='novo-registo') setInitialDateTime(); if (button.dataset.tab==='historico') listenToMaintenanceRecords(); if (button.dataset.tab==='admin') listenToUsers(); if (button.dataset.tab==='graficos') { populateDateFilters('chart'); renderDashboardCharts(); } }); });
+        function setInitialDateTime() { document.getElementById('mf-data').valueAsDate=new Date(); document.getElementById('mf-inicio').value=new Date().toTimeString().substring(0,5); document.getElementById('mf-tecnico').value=currentUserName || ''; toggleCausaField(); }
+
+        // --- NOVO REGISTRO ---
+        mfTipoSelect.addEventListener('change', toggleCausaField); function toggleCausaField() { mfCausaContainer.style.display = mfTipoSelect.value === 'Corretiva' ? 'block' : 'none'; }
+        document.getElementById('maintenance-form').addEventListener('submit', async (e) => { e.preventDefault(); const form = e.target; const submitButton = document.getElementById('save-maintenance-btn'); const user = auth.currentUser; if (!user || !currentUserMatricula) { showToast("Sessão inválida.", "error"); return; } submitButton.disabled = true; submitButton.textContent = "A guardar..."; const files = Array.from(document.getElementById('mf-anexo').files); const recordData = { tecnico: document.getElementById('mf-tecnico').value, tipoMaquina: document.getElementById('mf-maquina').value, linha: document.getElementById('mf-linha').value, modulo: document.getElementById('mf-modulo').value, data: document.getElementById('mf-data').value, horaInicio: document.getElementById('mf-inicio').value, horaFim: document.getElementById('mf-fim').value, tipo: document.getElementById('mf-tipo').value, causaFalha: document.getElementById('mf-tipo').value === 'Corretiva' ? document.getElementById('mf-causa').value : null, correcao: document.getElementById('mf-correcao').value, pecasUtilizadas: document.getElementById('mf-pecas').value, observacao: document.getElementById('mf-obs').value, registadoPor: currentUserMatricula, timestamp: serverTimestamp(), anexos: [], creatorUid: user.uid };
+            try { const docRef = await addDoc(maintenanceCollection, recordData); showToast("Manutenção registrada!"); form.reset(); setInitialDateTime(); if (files.length > 0) { submitButton.textContent = "A enviar anexos..."; try { const compressionOptions={maxSizeMB:1,maxWidthOrHeight:1920,useWebWorker:true}; const uploadPromises=files.map(async (file) => { let fileToUpload=file; if (file.type.startsWith('image/')) { try { fileToUpload=await imageCompression(file,compressionOptions); } catch (error) { console.warn("Erro compressão:", error); } } const storageRef=ref(storage, `anexos/${Date.now()}_${file.name}`); const snapshot=await uploadBytes(storageRef,fileToUpload); const downloadURL=await getDownloadURL(snapshot.ref); return { url:downloadURL, name:file.name }; }); const uploadedAnexos=await Promise.all(uploadPromises); await updateDoc(docRef, { anexos:uploadedAnexos }); console.log("Anexos OK:", docRef.id); } catch (uploadError) { console.error("Erro upload:", uploadError); showToast("Erro ao enviar anexos.", "error"); } }
+            } catch (error) { console.error("Erro ao guardar:", error); showToast("Erro ao guardar registro.", "error"); } finally { submitButton.disabled = false; submitButton.textContent = "Guardar"; }
+        });
+        
+        // --- HISTÓRICO ---
+        function listenToMaintenanceRecords() { if (unsubscribeMaintenance) unsubscribeMaintenance(); const q = query(maintenanceCollection, orderBy('timestamp', 'desc')); unsubscribeMaintenance = onSnapshot(q, (snapshot) => { currentMaintenanceData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); applyFiltersAndRender(); }, (error) => { console.error("Erro load histórico:", error); showToast("Erro ao carregar histórico.", "error"); currentMaintenanceData = []; renderHistoryTable([]); }); }
+        function applyFiltersAndRender() { const searchTerm = historySearchInput.value.toLowerCase().trim(); const maquinaFilter = filterMaquina.value; const linhaFilter = filterLinha.value; const tipoFilter = filterTipo.value; const dataFilter = filterData.value; let filteredData = currentMaintenanceData.filter(item => { const matchesSearch = !searchTerm || (item.tecnico && item.tecnico.toLowerCase().includes(searchTerm)) || (item.correcao && item.correcao.toLowerCase().includes(searchTerm)); const matchesMaquina = !maquinaFilter || item.tipoMaquina === maquinaFilter; const matchesLinha = !linhaFilter || item.linha === linhaFilter; const matchesTipo = !tipoFilter || item.tipo === tipoFilter; const matchesData = !dataFilter || item.data === dataFilter; return matchesSearch && matchesMaquina && matchesLinha && matchesTipo && matchesData; }); renderHistoryTable(filteredData); }
+        [filterMaquina, filterLinha, filterTipo, filterData, historySearchInput].forEach(el => el.addEventListener('input', applyFiltersAndRender));
+        clearFiltersBtn.addEventListener('click', () => { filterMaquina.value = ""; filterLinha.value = ""; filterTipo.value = ""; filterData.value = ""; historySearchInput.value = ""; applyFiltersAndRender(); });
+        function renderHistoryTable(dataToRender) { historyTableBody.innerHTML = ''; historyNoResults.classList.toggle('hidden', dataToRender.length > 0); dataToRender.forEach(data => { const row = historyTableBody.insertRow(); row.className = 'border-b text-xs hover:bg-gray-50'; let duracaoStr = '-'; if (data.horaInicio && data.horaFim) { try { const inicio=new Date(`1970-01-01T${data.horaInicio}:00`); const fim=new Date(`1970-01-01T${data.horaFim}:00`); if (fim < inicio) fim.setDate(fim.getDate() + 1); const diffMs=fim - inicio; if (!isNaN(diffMs) && diffMs >= 0) { const h=Math.floor(diffMs/3600000); const m=Math.floor((diffMs%3600000)/60000); duracaoStr=`${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`; } } catch (e) { console.warn("Erro duração", e); } } let anexoCellHTML='-'; if (data.anexos && data.anexos.length > 0) { const anexoElements=data.anexos.map(anexo => { const isImage=anexo.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/); if (isImage) { return `<a href="${anexo.url}" target="_blank" title="${anexo.name}"><img src="${anexo.url}" alt="${anexo.name}" class="w-8 h-8 object-cover rounded shadow-sm"></a>`; } else { return `<a href="${anexo.url}" target="_blank" class="text-blue-600 hover:underline block truncate text-xs" title="${anexo.name}">${anexo.name}</a>`; } }).join(''); anexoCellHTML=`<div class="flex items-center gap-1 flex-wrap">${anexoElements}</div>`; } else if (data.anexoURL) { anexoCellHTML=`<a href="${data.anexoURL}" target="_blank" class="text-blue-600 hover:underline text-xs">${data.anexoNome || 'Ver Ficheiro'}</a>`; } const canEditDelete=currentUserRole === 'admin'; 
+            // Ícones SVG
+            const editIcon = `<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>`;
+            const deleteIcon = `<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`;
+            const actionButtons=canEditDelete ? ` <button data-id="${data.id}" class="edit-btn action-btn text-blue-600 hover:text-blue-800" title="Editar">${editIcon} Editar</button> <button data-id="${data.id}" class="delete-btn action-btn text-red-600 hover:text-red-800" title="Eliminar">${deleteIcon} Eliminar</button> ` : ''; 
+            row.innerHTML=` <td class="p-3 align-top whitespace-nowrap">${data.data}</td> <td class="p-3 align-top">${data.tecnico}</td> <td class="p-3 align-top">${data.tipoMaquina || '-'}</td> <td class="p-3 align-top">${data.linha || '-'}</td> <td class="p-3 align-top">${data.modulo || '-'}</td> <td class="p-3 align-top">${data.tipo}</td> <td class="p-3 align-top whitespace-nowrap">${duracaoStr}</td> <td class="p-3 align-top">${data.causaFalha || '-'}</td> <td class="p-3 align-top">${data.correcao}</td> <td class="p-3 align-top">${data.pecasUtilizadas || '-'}</td> <td class="p-3 align-top">${anexoCellHTML}</td> <td class="p-3 align-top text-gray-500">${data.registadoPor}</td> <td class="p-3 align-top whitespace-nowrap">${actionButtons}</td> `; }); }
+        
+        // --- AÇÕES DE EDITAR/ELIMINAR ---
+        historyTableBody.addEventListener('click', async (e) => { const targetButton = e.target.closest('button'); if (!targetButton) return; const docId=targetButton.dataset.id; if (!docId) return; const record=currentMaintenanceData.find(item => item.id===docId); if (!record) return; const canEditDelete=currentUserRole === 'admin'; if (!canEditDelete && (targetButton.classList.contains('edit-btn') || targetButton.classList.contains('delete-btn'))) { showToast("Sem permissão.", "warning"); return; } if (targetButton.classList.contains('edit-btn')) { document.getElementById('edit-doc-id').value=docId; document.getElementById('edit-mf-tecnico').value=record.tecnico; document.getElementById('edit-mf-maquina').value=record.tipoMaquina || ''; document.getElementById('edit-mf-linha').value=record.linha || ''; document.getElementById('edit-mf-modulo').value=record.modulo || ''; document.getElementById('edit-mf-data').value=record.data; document.getElementById('edit-mf-inicio').value=record.horaInicio; document.getElementById('edit-mf-fim').value=record.horaFim; document.getElementById('edit-mf-tipo').value=record.tipo; document.getElementById('edit-mf-causa').value = record.causaFalha || ''; document.getElementById('edit-mf-correcao').value=record.correcao; document.getElementById('edit-mf-pecas').value = record.pecasUtilizadas || ''; document.getElementById('edit-mf-obs').value=record.observacao || ''; toggleEditCausaField(); editModal.classList.remove('hidden'); editModal.classList.add('flex'); } else if (targetButton.classList.contains('delete-btn')) { if (confirm(`Eliminar registro de ${record.tecnico} em ${record.data}?`)) { try { await deleteDoc(doc(maintenanceCollection, docId)); showToast("Registro eliminado."); } catch (error) { console.error("Erro delete:", error); showToast("Erro ao eliminar registro.", "error"); } } } });
+        editMfTipoSelect.addEventListener('change', toggleEditCausaField); function toggleEditCausaField() { editMfCausaContainer.style.display = editMfTipoSelect.value === 'Corretiva' ? 'block' : 'none'; }
+        editForm.addEventListener('submit', async (e) => { e.preventDefault(); const docId=document.getElementById('edit-doc-id').value; const submitButton=document.getElementById('save-edit-maintenance-btn'); const updatedData = { tipoMaquina: document.getElementById('edit-mf-maquina').value, linha: document.getElementById('edit-mf-linha').value, modulo: document.getElementById('edit-mf-modulo').value, data: document.getElementById('edit-mf-data').value, horaInicio: document.getElementById('edit-mf-inicio').value, horaFim: document.getElementById('edit-mf-fim').value, tipo: document.getElementById('edit-mf-tipo').value, causaFalha: document.getElementById('edit-mf-tipo').value === 'Corretiva' ? document.getElementById('edit-mf-causa').value : null, correcao: document.getElementById('edit-mf-correcao').value, pecasUtilizadas: document.getElementById('edit-mf-pecas').value, observacao: document.getElementById('edit-mf-obs').value, }; submitButton.disabled=true; submitButton.textContent="A guardar..."; try { await updateDoc(doc(maintenanceCollection, docId), updatedData); showToast("Registro atualizado!"); closeEditModal(); } catch (error) { console.error("Erro update:", error); showToast("Erro ao atualizar registro.", "error"); } finally { submitButton.disabled=false; submitButton.textContent="Salvar Alterações"; } });
+        document.getElementById('cancel-edit-maintenance').addEventListener('click', closeEditModal); function closeEditModal() { editModal.classList.add('hidden'); editModal.classList.remove('flex'); }
+
+        // --- ADMIN ---
+        document.getElementById('create-user-form').addEventListener('submit', async (e) => { e.preventDefault(); const form=e.target; const nome=document.getElementById('cu-nome').value; const matricula=document.getElementById('cu-matricula').value; const password=document.getElementById('cu-password').value; const createButton=form.querySelector('button[type="submit"]'); const email=matricula + FAKE_DOMAIN; if (currentUserRole !== 'admin') { showToast("Apenas admins podem criar.", "error"); return; } createButton.disabled=true; createButton.textContent="A criar..."; try { const userCredential=await createUserWithEmailAndPassword(secondaryAuth, email, password); const newUser=userCredential.user; await setDoc(doc(usersCollection, newUser.uid), { nome: nome, email: newUser.email, matricula: matricula, role: 'tecnico', createdAt: serverTimestamp(), status: 'ativo' }); showToast("Técnico criado!"); form.reset(); } catch (error) { if (error.code==='auth/email-already-in-use') { showToast("Matrícula já existe.", "error"); } else { showToast("Erro: " + error.message, "error"); } } finally { createButton.disabled=false; createButton.textContent="Criar Técnico"; } });
+        let unsubscribeUsers=null; function listenToUsers() { if (currentUserRole !== 'admin') return; if (unsubscribeUsers) unsubscribeUsers(); unsubscribeUsers=onSnapshot(query(usersCollection, orderBy("matricula")), (snapshot) => { const tableBody=document.getElementById('users-table-body'); tableBody.innerHTML=''; if (snapshot.empty) { tableBody.innerHTML='<tr><td colspan="4" class="text-center p-4 text-gray-500">Nenhum utilizador.</td></tr>'; return; } snapshot.forEach(doc => { const data=doc.data(); if (data.matricula===currentUserMatricula) return; const row=document.createElement('tr'); row.className='border-b hover:bg-gray-50'; const isAtivo=data.status !== 'inativo'; const statusClass=isAtivo ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100'; const actionText=isAtivo ? 'Desativar' : 'Ativar'; const actionClass=isAtivo ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'; row.innerHTML=` <td class="p-3 font-medium">${data.nome || '-'}</td> <td class="p-3">${data.matricula}</td> <td class="p-3"> <span class="px-2 py-1 text-xs font-semibold rounded-full ${statusClass}"> ${isAtivo ? 'Ativo' : 'Inativo'} </span> </td> <td class="p-3"> <button data-uid="${doc.id}" data-status="${isAtivo ? 'inativo' : 'ativo'}" class="toggle-status-btn btn btn-sm ${actionClass}"> ${actionText} </button> </td> `; tableBody.appendChild(row); }); }); }
+        document.getElementById('users-table-body').addEventListener('click', async (e) => { if (e.target.classList.contains('toggle-status-btn')) { const uid=e.target.dataset.uid; const newStatus=e.target.dataset.status; const userDocRef=doc(usersCollection, uid); try { await updateDoc(userDocRef, { status:newStatus }); showToast(`Utilizador ${newStatus==='ativo' ? 'ativado' : 'desativado'}.`); } catch (error) { showToast("Erro ao atualizar.", "error"); console.error("Erro status:", error); } } });
+
+        // --- EXPORTAÇÃO E GRÁFICOS ---
+        document.getElementById('export-excel-btn').addEventListener('click', async () => { const selectedMonth=document.getElementById('export-month').value; const selectedYear=document.getElementById('export-year').value; const monthStr=selectedMonth.toString().padStart(2, '0'); const startDate=`${selectedYear}-${monthStr}-01`; const lastDay=new Date(selectedYear, selectedMonth, 0).getDate(); const endDate=`${selectedYear}-${monthStr}-${lastDay}`; const q=query(maintenanceCollection, where('data', '>=', startDate), where('data', '<=', endDate), orderBy('data', 'desc') ); const querySnapshot=await getDocs(q); if (querySnapshot.empty) { showToast("Sem dados para exportar.", "warning"); return; } const dataToExport=[['Data', 'Técnico', 'Máquina', 'Linha', 'Módulo', 'Tipo', 'Duração', 'Causa Falha', 'Correção', 'Peças Utilizadas', 'Obs', 'Anexo(URL)', 'Por(Matrícula)', 'Início', 'Fim']]; querySnapshot.forEach(doc => { const data=doc.data(); let duracaoStr=''; if (data.horaInicio && data.horaFim) { try { const inicio=new Date(`1970-01-01T${data.horaInicio}:00`); const fim=new Date(`1970-01-01T${data.horaFim}:00`); if (fim < inicio) fim.setDate(fim.getDate() + 1); const diffMs=fim - inicio; if (!isNaN(diffMs) && diffMs >= 0) { const h=Math.floor(diffMs/3600000); const m=Math.floor((diffMs%3600000)/60000); duracaoStr=`${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`; } } catch(e){} } let anexoUrls=''; if (data.anexos && data.anexos.length > 0) anexoUrls=data.anexos.map(a => a.url).join('; '); else if (data.anexoURL) anexoUrls=data.anexoURL; dataToExport.push([ data.data, data.tecnico, data.tipoMaquina || '', data.linha || '', data.modulo || '', data.tipo, duracaoStr, data.causaFalha || '', data.correcao, data.pecasUtilizadas || '', data.observacao || '', anexoUrls, data.registadoPor, data.horaInicio, data.horaFim ]); }); const ws=XLSX.utils.aoa_to_sheet(dataToExport); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Manutenções"); const monthName=document.getElementById('export-month').options[document.getElementById('export-month').selectedIndex].text; const fileName=`Relatorio_${monthName}_${selectedYear}.xlsx`; XLSX.writeFile(wb, fileName); });
+        function populateDateFilters(prefix) { const monthSelect=document.getElementById(`${prefix}-month`); const yearSelect=document.getElementById(`${prefix}-year`); monthSelect.innerHTML=''; yearSelect.innerHTML=''; const months=["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]; months.forEach((month, index) => { const option=document.createElement('option'); option.value=index + 1; option.textContent=month; monthSelect.appendChild(option); }); const currentYear=new Date().getFullYear(); for (let i=currentYear; i >= currentYear - 5; i--) { const option=document.createElement('option'); option.value=i; option.textContent=i; yearSelect.appendChild(option); } monthSelect.value=new Date().getMonth() + 1; yearSelect.value=currentYear; }
+        let mensaisChart=null; let maquinaChart=null; async function renderDashboardCharts(filters=null) { let q; if (filters) { q=query(maintenanceCollection, where('data', '>=', filters.startDate), where('data', '<=', filters.endDate), orderBy('data', 'desc')); } else { q=query(maintenanceCollection, orderBy('timestamp', 'desc')); } const querySnapshot=await getDocs(q); const monthlyData={}; const machineData={}; querySnapshot.forEach(doc => { const data=doc.data(); try { if (!data.data || typeof data.data !== 'string') return; const date=new Date(data.data); if (isNaN(date.getTime())) return; const monthKey=date.toISOString().slice(0, 7); if (data.tipo==='Corretiva' || data.tipo==='Preventiva') { if (!monthlyData[monthKey]) monthlyData[monthKey]={ Corretiva: 0, Preventiva: 0 }; monthlyData[monthKey][data.tipo]++; } if (data.tipoMaquina) machineData[data.tipoMaquina]=(machineData[data.tipoMaquina] || 0) + 1; } catch(e) { console.warn("Erro data gráfico:", data, e); } }); if (querySnapshot.empty) { if (mensaisChart) mensaisChart.destroy(); if (maquinaChart) maquinaChart.destroy(); mensaisChart=null; maquinaChart=null; const ctxMensais=document.getElementById('manutencoesMensaisChart').getContext('2d'); const ctxMaquina=document.getElementById('manutencoesPorMaquinaChart').getContext('2d'); ctxMensais.clearRect(0, 0, ctxMensais.canvas.width, ctxMensais.canvas.height); ctxMaquina.clearRect(0, 0, ctxMaquina.canvas.width, ctxMaquina.canvas.height); ctxMensais.font="16px Inter"; ctxMensais.textAlign="center"; ctxMensais.fillText("Sem dados.", ctxMensais.canvas.width / 2, 50); ctxMaquina.font="16px Inter"; ctxMaquina.textAlign="center"; ctxMaquina.fillText("Sem dados.", ctxMaquina.canvas.width / 2, 50); return; } const sortedMonths=Object.keys(monthlyData).sort(); const monthlyLabels=sortedMonths.map(month => { const [year, m]=month.split('-'); return `${m}/${year}`; }); const preventivaData=sortedMonths.map(month => monthlyData[month].Preventiva); const corretivaData=sortedMonths.map(month => monthlyData[month].Corretiva); const ctxMensais=document.getElementById('manutencoesMensaisChart').getContext('2d'); if (mensaisChart) mensaisChart.destroy(); mensaisChart=new Chart(ctxMensais, { type: 'bar', data: { labels: monthlyLabels, datasets: [ { label: 'Preventiva', data: preventivaData, backgroundColor: 'rgba(54, 162, 235, 0.6)' }, { label: 'Corretiva', data: corretivaData, backgroundColor: 'rgba(255, 99, 132, 0.6)' } ] }, options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, responsive: true } }); const machineLabels=Object.keys(machineData); const machineCounts=Object.values(machineData); const ctxMaquina=document.getElementById('manutencoesPorMaquinaChart').getContext('2d'); if (maquinaChart) maquinaChart.destroy(); maquinaChart=new Chart(ctxMaquina, { type: 'doughnut', data: { labels: machineLabels, datasets: [{ label: 'Nº Manutenções', data: machineCounts, backgroundColor: ['rgba(255, 99, 132, 0.7)','rgba(54, 162, 235, 0.7)','rgba(255, 206, 86, 0.7)','rgba(75, 192, 192, 0.7)','rgba(153, 102, 255, 0.7)','rgba(255, 159, 64, 0.7)'], hoverOffset: 4 }] }, options: { responsive: true } }); }
+        document.getElementById('chart-filter-btn').addEventListener('click', () => { const selectedMonth=document.getElementById('chart-month').value; const selectedYear=document.getElementById('chart-year').value; const monthStr=selectedMonth.toString().padStart(2, '0'); const startDate=`${selectedYear}-${monthStr}-01`; const lastDay=new Date(selectedYear, selectedMonth, 0).getDate(); const endDate=`${selectedYear}-${monthStr}-${lastDay}`; renderDashboardCharts({ startDate, endDate }); });
+        document.getElementById('chart-reset-btn').addEventListener('click', () => renderDashboardCharts());
+
+        // --- INICIALIZAÇÃO ADMIN ---
+        async function initializeAdminAccount() { if(auth.currentUser) return; const usersSnapshot = await getDocs(usersCollection); if (usersSnapshot.empty) { const matricula = "3617"; const password = "29032002"; const nome = "Nicolas Kasahara"; const email = matricula + FAKE_DOMAIN; try { const userCredential = await createUserWithEmailAndPassword(auth, email, password); const user = userCredential.user; await setDoc(doc(usersCollection, user.uid), { email: user.email, nome: nome, matricula: matricula, role: 'admin', createdAt: serverTimestamp() }); showToast("Conta admin '3617' criada. Faça login.", 'info', 5000); await signOut(auth); } catch (error) { if (error.code !== 'auth/email-already-in-use') console.error("Erro init admin:", error); } } }
+        initializeAdminAccount();
+
+    </script>
+</body>
+</html>
