@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eng SMD - Sistema Técnico v2.1</title>
+    <title>Eng SMD - Sistema Técnico v4.0</title>
+    <meta name="theme-color" content="#f8f9fa" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Biblioteca de Compressão Essencial para v4.0 -->
     <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <style>
@@ -28,21 +30,17 @@
         .tab-button.active { border-color: #1a73e8; color: #1a73e8; background-color: #e8f0fe;}
         .modal-backdrop { background-color: rgba(0,0,0,0.5); z-index: 40; }
         .modal { max-height: 90vh; overflow-y: auto; z-index: 50; }
-        .form-input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; transition: border-color 0.2s, box-shadow 0.2s; font-size: 0.875rem; } /* Borda cinza mais clara */
+        .form-input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; transition: border-color 0.2s, box-shadow 0.2s; font-size: 0.875rem; } 
         .form-input:focus { outline: none; border-color: #1a73e8; box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2); }
         .form-input:read-only { background-color: #e9ecef; cursor: not-allowed; }
         .form-label { display: block; text-sm font-medium text-gray-700 mb-1;}
         .form-file { font-size: 0.875rem; color: #555; }
-        .form-file::file-selector-button { /* Estilo do botão interno */
-             margin-right: 0.75rem; padding: 0.375rem 0.75rem; border-radius: 9999px; border-width: 0px; font-size: 0.875rem; font-weight: 600; background-color: #e8f0fe; color: #1a73e8; cursor: pointer; transition: background-color 0.2s;
-        }
+        .form-file::file-selector-button { margin-right: 0.75rem; padding: 0.375rem 0.75rem; border-radius: 9999px; border-width: 0px; font-size: 0.875rem; font-weight: 600; background-color: #e8f0fe; color: #1a73e8; cursor: pointer; transition: background-color 0.2s; }
         .form-file::file-selector-button:hover { background-color: #d0e1fd; }
         .action-btn { font-size: 0.75rem; padding: 0.125rem 0.375rem; margin-right: 0.25rem; display: inline-flex; align-items: center; gap: 0.2rem; }
         .hidden-field { display: none; }
-        /* Cores alternadas e hover para tabelas */
         tbody tr:nth-child(even) { background-color: #f9fafb; }
         tbody tr:hover { background-color: #f3f4f6; }
-        /* Ícones SVG */
         .icon { width: 1em; height: 1em; } 
     </style>
 </head>
@@ -94,7 +92,7 @@
                             <div><label for="mf-correcao" class="form-label">Descrição da Correção</label><textarea id="mf-correcao" rows="3" required class="form-input mt-1"></textarea></div>
                             <div><label for="mf-pecas" class="form-label">Peças Utilizadas (Opcional)</label><textarea id="mf-pecas" rows="2" placeholder="Listar peças e quantidades (Ex: Sensor XPTO x1, Correia YZ x2)" class="form-input mt-1"></textarea></div>
                             <div><label for="mf-obs" class="form-label">Observações</label><textarea id="mf-obs" rows="2" class="form-input mt-1"></textarea></div>
-                            <div><label for="mf-anexo" class="form-label">Anexar Ficheiro (Imagem ou PDF)</label><input type="file" id="mf-anexo" accept="image/*,.pdf" multiple class="form-input form-file mt-1"/></div>
+                            <div><label for="mf-anexo" class="form-label">Anexar Ficheiro (Apenas Imagens)</label><input type="file" id="mf-anexo" accept="image/*" multiple class="form-input form-file mt-1"/></div>
                             <div class="text-right pt-2"><button type="submit" id="save-maintenance-btn" class="btn btn-primary px-6">Guardar</button></div>
                         </form>
                     </div>
@@ -126,7 +124,7 @@
                 </div>
 
                 <div id="graficos-tab" class="tab-content hidden">
-                     <div class="card p-4 mb-6 flex flex-wrap items-center gap-2 md:gap-4"> <h3 class="text-lg font-semibold w-full md:w-auto">Filtrar por Mês</h3> <select id="chart-month" class="form-input !w-auto text-sm py-1"></select> <select id="chart-year" class="form-input !w-auto text-sm py-1"></select> <button id="chart-filter-btn" class="btn btn-primary text-sm py-1">Aplicar Filtro</button> <button id="chart-reset-btn" class="btn btn-secondary text-sm py-1">Mostrar Todos</button> </div> <div class="grid grid-cols-1 lg:grid-cols-2 gap-8"> <div class="card p-6"> <h2 class="text-2xl font-bold mb-4">Manutenções / Mês</h2> <canvas id="manutencoesMensaisChart"></canvas> </div> <div class="card p-6"> <h2 class="text-2xl font-bold mb-4">Manutenções / Máquina</h2> <canvas id="manutencoesPorMaquinaChart"></canvas> </div> </div>
+                      <div class="card p-4 mb-6 flex flex-wrap items-center gap-2 md:gap-4"> <h3 class="text-lg font-semibold w-full md:w-auto">Filtrar por Mês</h3> <select id="chart-month" class="form-input !w-auto text-sm py-1"></select> <select id="chart-year" class="form-input !w-auto text-sm py-1"></select> <button id="chart-filter-btn" class="btn btn-primary text-sm py-1">Aplicar Filtro</button> <button id="chart-reset-btn" class="btn btn-secondary text-sm py-1">Mostrar Todos</button> </div> <div class="grid grid-cols-1 lg:grid-cols-2 gap-8"> <div class="card p-6"> <h2 class="text-2xl font-bold mb-4">Manutenções / Mês</h2> <canvas id="manutencoesMensaisChart"></canvas> </div> <div class="card p-6"> <h2 class="text-2xl font-bold mb-4">Manutenções / Máquina</h2> <canvas id="manutencoesPorMaquinaChart"></canvas> </div> </div>
                 </div>
 
                 <div id="admin-tab" class="tab-content hidden">
@@ -170,9 +168,9 @@
                 <input type="hidden" id="edit-doc-id">
                 <div><label class="form-label">Técnico (Registro Original)</label><input type="text" id="edit-mf-tecnico" readonly class="form-input bg-gray-100 cursor-not-allowed mt-1"></div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                     <div><label for="edit-mf-maquina" class="form-label">Máquina</label><select id="edit-mf-maquina" required class="form-input bg-white mt-1"><option value="">Selecione...</option> <option>DEK</option><option>GPX C II</option><option>KOH YOUNG SPI</option> <option>KOH YOUNG AOI</option><option>NXT II</option><option>XPA 243E</option><option>XPB 243E</option><option>PYRAMAX 125A</option><option>TR7007 SPI</option><option>CM602 L</option><option>CM101 L</option><option>JUKI JM20</option><option>TR7500 AOI</option><option>OMRON</option><option>NPM DX</option><option>NPM WX</option><option>SAKI SPI</option><option>VITROX AOI</option></select></div>
-                     <div><label for="edit-mf-linha" class="form-label">Linha</label><select id="edit-mf-linha" required class="form-input bg-white mt-1"><option value="">Selecione...</option> <option>IA 1</option><option>IA 2</option><option>IA 3</option><option>SA1</option><option>SB1</option><option>S02</option><option>S03</option><option>S04</option><option>S05</option><option>S06</option><option>S07</option><option>S08</option><option>S09</option><option>S10</option></select></div>
-                     <div><label for="edit-mf-modulo" class="form-label">Módulo</label><select id="edit-mf-modulo" required class="form-input bg-white mt-1"><option value="">Selecione...</option> <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></div>
+                      <div><label for="edit-mf-maquina" class="form-label">Máquina</label><select id="edit-mf-maquina" required class="form-input bg-white mt-1"><option value="">Selecione...</option> <option>DEK</option><option>GPX C II</option><option>KOH YOUNG SPI</option> <option>KOH YOUNG AOI</option><option>NXT II</option><option>XPA 243E</option><option>XPB 243E</option><option>PYRAMAX 125A</option><option>TR7007 SPI</option><option>CM602 L</option><option>CM101 L</option><option>JUKI JM20</option><option>TR7500 AOI</option><option>OMRON</option><option>NPM DX</option><option>NPM WX</option><option>SAKI SPI</option><option>VITROX AOI</option></select></div>
+                      <div><label for="edit-mf-linha" class="form-label">Linha</label><select id="edit-mf-linha" required class="form-input bg-white mt-1"><option value="">Selecione...</option> <option>IA 1</option><option>IA 2</option><option>IA 3</option><option>SA1</option><option>SB1</option><option>S02</option><option>S03</option><option>S04</option><option>S05</option><option>S06</option><option>S07</option><option>S08</option><option>S09</option><option>S10</option></select></div>
+                      <div><label for="edit-mf-modulo" class="form-label">Módulo</label><select id="edit-mf-modulo" required class="form-input bg-white mt-1"><option value="">Selecione...</option> <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div><label for="edit-mf-data" class="form-label">Data</label><input type="date" id="edit-mf-data" required class="form-input mt-1"></div>
@@ -199,16 +197,25 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, doc, getDoc, getDocs, onSnapshot, query, orderBy, serverTimestamp, where, addDoc, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+        
+        // REMOVIDO: import Storage
 
         // --- CONFIG FIREBASE ---
-        const firebaseConfig = { apiKey: "AIzaSyA-siDqx6mhwGZqeN7E-oFJySf2Fr7QXGM", authDomain: "engsmdsistema-novo.firebaseapp.com", projectId: "engsmdsistema-novo", storageBucket: "engsmdsistema-novo.appspot.com", messagingSenderId: "780550032391", appId: "1:780550032391:web:e69d525969c4c752bfeea2", measurementId: "G-L6PNJRDLS6" };
+        const firebaseConfig = { 
+            apiKey: "AIzaSyA-siDqx6mhwGZqeN7E-oFJySf2Fr7QXGM", 
+            authDomain: "engsmdsistema-novo.firebaseapp.com", 
+            projectId: "engsmdsistema-novo", 
+            storageBucket: "engsmdsistema-novo.appspot.com", 
+            messagingSenderId: "780550032391", 
+            appId: "1:780550032391:web:e69d525969c4c752bfeea2", 
+            measurementId: "G-L6PNJRDLS6" 
+        };
+        
         const appId = firebaseConfig.projectId; 
         const FAKE_DOMAIN = "@engsmd.local";
         const mainApp = initializeApp(firebaseConfig);
         const auth = getAuth(mainApp);
         const db = getFirestore(mainApp);
-        const storage = getStorage(mainApp);
         const secondaryApp = initializeApp(firebaseConfig, "secondary");
         const secondaryAuth = getAuth(secondaryApp);
         const usersCollection = collection(db, `artifacts/${appId}/public/data/users`);
@@ -238,8 +245,59 @@
         // --- Função Toast ---
         function showToast(message, type = 'success', duration = 3000) { let bgColor; switch(type) { case 'error': bgColor = "#dc3545"; break; case 'warning': bgColor = "#ffc107"; break; default: bgColor = "#1a73e8"; } Toastify({ text: message, duration: duration, gravity: "top", position: "right", style: { background: bgColor, borderRadius: "6px" }, stopOnFocus: true }).showToast(); }
         
+        // --- HELPERS ---
+        // Converte Arquivo para Base64
+        const toBase64 = file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+
         // --- AUTENTICAÇÃO ---
-        onAuthStateChanged(auth, async (user) => { currentUser=user; if (user) { const userDocRef=doc(usersCollection, user.uid); const userDocSnap=await getDoc(userDocRef); if (userDocSnap.exists()) { const userData=userDocSnap.data(); if (userData.status==='inativo') { showToast("Conta desativada.", "error", 5000); signOut(auth); return; } currentUserRole=userData.role; currentUserName=userData.nome; currentUserMatricula=userData.matricula; userIdentifierSpan.textContent=`Matrícula: ${currentUserMatricula}`; document.getElementById('admin-tab-button').classList.toggle('hidden', currentUserRole !== 'admin'); authScreen.classList.add('hidden'); appScreen.classList.remove('hidden'); listenToMaintenanceRecords(); populateDateFilters('export'); setInitialDateTime(); } else { signOut(auth); } } else { currentUserRole=null; currentUserName=null; currentUserMatricula=null; authScreen.classList.remove('hidden'); appScreen.classList.add('hidden'); document.getElementById('admin-tab-button').classList.add('hidden'); initializeAdminAccount(); if (unsubscribeMaintenance) unsubscribeMaintenance(); } });
+        onAuthStateChanged(auth, async (user) => { 
+            currentUser = user; 
+            if (user) { 
+                const userDocRef = doc(usersCollection, user.uid); 
+                try {
+                    const userDocSnap = await getDoc(userDocRef); 
+                    if (userDocSnap.exists()) { 
+                        const userData = userDocSnap.data(); 
+                        if (userData.status === 'inativo') { 
+                            showToast("Conta desativada.", "error", 5000); 
+                            signOut(auth); 
+                            return; 
+                        } 
+                        currentUserRole = userData.role; 
+                        currentUserName = userData.nome; 
+                        currentUserMatricula = userData.matricula; 
+                        userIdentifierSpan.textContent = `Matrícula: ${currentUserMatricula}`; 
+                        document.getElementById('admin-tab-button').classList.toggle('hidden', currentUserRole !== 'admin'); 
+                        authScreen.classList.add('hidden'); 
+                        appScreen.classList.remove('hidden'); 
+                        listenToMaintenanceRecords(); 
+                        populateDateFilters('export'); 
+                        setInitialDateTime(); 
+                    } else { 
+                        console.warn("Usuário autenticado sem registro no banco. Saindo...");
+                        signOut(auth); 
+                    } 
+                } catch (error) {
+                    console.error("Erro ao buscar dados do usuário:", error);
+                    showToast("Erro de conexão com o banco.", "error");
+                }
+            } else { 
+                currentUserRole = null; 
+                currentUserName = null; 
+                currentUserMatricula = null; 
+                authScreen.classList.remove('hidden'); 
+                appScreen.classList.add('hidden'); 
+                document.getElementById('admin-tab-button').classList.add('hidden'); 
+                initializeAdminAccount(); 
+                if (unsubscribeMaintenance) unsubscribeMaintenance(); 
+            } 
+        });
+
         document.getElementById('login-form').addEventListener('submit', (e) => { e.preventDefault(); const matricula=document.getElementById('login-matricula').value; const password=document.getElementById('login-password').value; const email=matricula + FAKE_DOMAIN; signInWithEmailAndPassword(auth, email, password).catch((error) => { let msg="Erro ao entrar."; if (error.code.includes('auth/')) msg="Matrícula ou senha incorretos."; showToast(msg, "error"); }); });
         document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
 
@@ -249,9 +307,105 @@
 
         // --- NOVO REGISTRO ---
         mfTipoSelect.addEventListener('change', toggleCausaField); function toggleCausaField() { mfCausaContainer.style.display = mfTipoSelect.value === 'Corretiva' ? 'block' : 'none'; }
-        document.getElementById('maintenance-form').addEventListener('submit', async (e) => { e.preventDefault(); const form = e.target; const submitButton = document.getElementById('save-maintenance-btn'); const user = auth.currentUser; if (!user || !currentUserMatricula) { showToast("Sessão inválida.", "error"); return; } submitButton.disabled = true; submitButton.textContent = "A guardar..."; const files = Array.from(document.getElementById('mf-anexo').files); const recordData = { tecnico: document.getElementById('mf-tecnico').value, tipoMaquina: document.getElementById('mf-maquina').value, linha: document.getElementById('mf-linha').value, modulo: document.getElementById('mf-modulo').value, data: document.getElementById('mf-data').value, horaInicio: document.getElementById('mf-inicio').value, horaFim: document.getElementById('mf-fim').value, tipo: document.getElementById('mf-tipo').value, causaFalha: document.getElementById('mf-tipo').value === 'Corretiva' ? document.getElementById('mf-causa').value : null, correcao: document.getElementById('mf-correcao').value, pecasUtilizadas: document.getElementById('mf-pecas').value, observacao: document.getElementById('mf-obs').value, registadoPor: currentUserMatricula, timestamp: serverTimestamp(), anexos: [], creatorUid: user.uid };
-            try { const docRef = await addDoc(maintenanceCollection, recordData); showToast("Manutenção registrada!"); form.reset(); setInitialDateTime(); if (files.length > 0) { submitButton.textContent = "A enviar anexos..."; try { const compressionOptions={maxSizeMB:1,maxWidthOrHeight:1920,useWebWorker:true}; const uploadPromises=files.map(async (file) => { let fileToUpload=file; if (file.type.startsWith('image/')) { try { fileToUpload=await imageCompression(file,compressionOptions); } catch (error) { console.warn("Erro compressão:", error); } } const storageRef=ref(storage, `anexos/${Date.now()}_${file.name}`); const snapshot=await uploadBytes(storageRef,fileToUpload); const downloadURL=await getDownloadURL(snapshot.ref); return { url:downloadURL, name:file.name }; }); const uploadedAnexos=await Promise.all(uploadPromises); await updateDoc(docRef, { anexos:uploadedAnexos }); console.log("Anexos OK:", docRef.id); } catch (uploadError) { console.error("Erro upload:", uploadError); showToast("Erro ao enviar anexos.", "error"); } }
-            } catch (error) { console.error("Erro ao guardar:", error); showToast("Erro ao guardar registro.", "error"); } finally { submitButton.disabled = false; submitButton.textContent = "Guardar"; }
+        
+        document.getElementById('maintenance-form').addEventListener('submit', async (e) => { 
+            e.preventDefault(); 
+            const form = e.target; 
+            const submitButton = document.getElementById('save-maintenance-btn'); 
+            
+            if (!currentUser || !currentUserMatricula) { 
+                showToast("Sessão inválida. Faça login novamente.", "error"); 
+                signOut(auth);
+                return; 
+            } 
+            
+            submitButton.disabled = true; 
+            submitButton.textContent = "A guardar..."; 
+            
+            const files = Array.from(document.getElementById('mf-anexo').files); 
+            let uploadedAnexos = [];
+
+            // --- LÓGICA BASE64 (GUARDAR INTERNO) ---
+            if (files.length > 0) {
+                submitButton.textContent = "A processar imagens...";
+                try {
+                    // Compressão agressiva para caber no Firestore (max 1MB por doc)
+                    const compressionOptions = { 
+                        maxSizeMB: 0.3, // Máximo 300KB
+                        maxWidthOrHeight: 1024, // Reduz resolução
+                        useWebWorker: true,
+                        fileType: "image/jpeg"
+                    };
+                    
+                    const uploadPromises = files.map(async (file) => {
+                        let fileToProcess = file;
+                        
+                        // Apenas processa imagens
+                        if (file.type.startsWith('image/')) {
+                            try { 
+                                fileToProcess = await imageCompression(file, compressionOptions); 
+                                const base64String = await toBase64(fileToProcess);
+                                return { url: base64String, name: file.name };
+                            } catch (e) { 
+                                console.warn("Compressão falhou, ignorando imagem", e); 
+                                return null;
+                            }
+                        }
+                        return null; // Ignora PDFs/Outros nesta versão Base64
+                    });
+
+                    const results = await Promise.all(uploadPromises);
+                    uploadedAnexos = results.filter(item => item !== null);
+                    
+                    if (uploadedAnexos.length === 0 && files.length > 0) {
+                        showToast("Apenas imagens são permitidas neste modo.", "warning");
+                    }
+
+                } catch (error) {
+                    console.error("Erro Processamento:", error);
+                    showToast("Erro ao processar imagens.", "error");
+                    submitButton.disabled = false;
+                    submitButton.textContent = "Guardar";
+                    return;
+                }
+            }
+
+            // --- SALVAR NO FIRESTORE ---
+            const recordData = { 
+                tecnico: document.getElementById('mf-tecnico').value, 
+                tipoMaquina: document.getElementById('mf-maquina').value, 
+                linha: document.getElementById('mf-linha').value, 
+                modulo: document.getElementById('mf-modulo').value, 
+                data: document.getElementById('mf-data').value, 
+                horaInicio: document.getElementById('mf-inicio').value, 
+                horaFim: document.getElementById('mf-fim').value, 
+                tipo: document.getElementById('mf-tipo').value, 
+                causaFalha: document.getElementById('mf-tipo').value === 'Corretiva' ? document.getElementById('mf-causa').value : null, 
+                correcao: document.getElementById('mf-correcao').value, 
+                pecasUtilizadas: document.getElementById('mf-pecas').value, 
+                observacao: document.getElementById('mf-obs').value, 
+                registadoPor: currentUserMatricula, 
+                timestamp: serverTimestamp(), 
+                anexos: uploadedAnexos, // Salva o Base64 aqui dentro
+                creatorUid: currentUser.uid 
+            };
+
+            try { 
+                await addDoc(maintenanceCollection, recordData); 
+                showToast("Manutenção registrada com sucesso!"); 
+                form.reset(); 
+                setInitialDateTime(); 
+            } catch (error) { 
+                console.error("Erro ao guardar:", error); 
+                if (error.code === 'resource-exhausted') {
+                    showToast("Erro: Imagem muito grande para o banco.", "error");
+                } else {
+                    showToast("Erro ao guardar dados.", "error"); 
+                }
+            } finally { 
+                submitButton.disabled = false; 
+                submitButton.textContent = "Guardar"; 
+            }
         });
         
         // --- HISTÓRICO ---
@@ -259,7 +413,7 @@
         function applyFiltersAndRender() { const searchTerm = historySearchInput.value.toLowerCase().trim(); const maquinaFilter = filterMaquina.value; const linhaFilter = filterLinha.value; const tipoFilter = filterTipo.value; const dataFilter = filterData.value; let filteredData = currentMaintenanceData.filter(item => { const matchesSearch = !searchTerm || (item.tecnico && item.tecnico.toLowerCase().includes(searchTerm)) || (item.correcao && item.correcao.toLowerCase().includes(searchTerm)); const matchesMaquina = !maquinaFilter || item.tipoMaquina === maquinaFilter; const matchesLinha = !linhaFilter || item.linha === linhaFilter; const matchesTipo = !tipoFilter || item.tipo === tipoFilter; const matchesData = !dataFilter || item.data === dataFilter; return matchesSearch && matchesMaquina && matchesLinha && matchesTipo && matchesData; }); renderHistoryTable(filteredData); }
         [filterMaquina, filterLinha, filterTipo, filterData, historySearchInput].forEach(el => el.addEventListener('input', applyFiltersAndRender));
         clearFiltersBtn.addEventListener('click', () => { filterMaquina.value = ""; filterLinha.value = ""; filterTipo.value = ""; filterData.value = ""; historySearchInput.value = ""; applyFiltersAndRender(); });
-        function renderHistoryTable(dataToRender) { historyTableBody.innerHTML = ''; historyNoResults.classList.toggle('hidden', dataToRender.length > 0); dataToRender.forEach(data => { const row = historyTableBody.insertRow(); row.className = 'border-b text-xs hover:bg-gray-50'; let duracaoStr = '-'; if (data.horaInicio && data.horaFim) { try { const inicio=new Date(`1970-01-01T${data.horaInicio}:00`); const fim=new Date(`1970-01-01T${data.horaFim}:00`); if (fim < inicio) fim.setDate(fim.getDate() + 1); const diffMs=fim - inicio; if (!isNaN(diffMs) && diffMs >= 0) { const h=Math.floor(diffMs/3600000); const m=Math.floor((diffMs%3600000)/60000); duracaoStr=`${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`; } } catch (e) { console.warn("Erro duração", e); } } let anexoCellHTML='-'; if (data.anexos && data.anexos.length > 0) { const anexoElements=data.anexos.map(anexo => { const isImage=anexo.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/); if (isImage) { return `<a href="${anexo.url}" target="_blank" title="${anexo.name}"><img src="${anexo.url}" alt="${anexo.name}" class="w-8 h-8 object-cover rounded shadow-sm"></a>`; } else { return `<a href="${anexo.url}" target="_blank" class="text-blue-600 hover:underline block truncate text-xs" title="${anexo.name}">${anexo.name}</a>`; } }).join(''); anexoCellHTML=`<div class="flex items-center gap-1 flex-wrap">${anexoElements}</div>`; } else if (data.anexoURL) { anexoCellHTML=`<a href="${data.anexoURL}" target="_blank" class="text-blue-600 hover:underline text-xs">${data.anexoNome || 'Ver Ficheiro'}</a>`; } const canEditDelete=currentUserRole === 'admin'; 
+        function renderHistoryTable(dataToRender) { historyTableBody.innerHTML = ''; historyNoResults.classList.toggle('hidden', dataToRender.length > 0); dataToRender.forEach(data => { const row = historyTableBody.insertRow(); row.className = 'border-b text-xs hover:bg-gray-50'; let duracaoStr = '-'; if (data.horaInicio && data.horaFim) { try { const inicio=new Date(`1970-01-01T${data.horaInicio}:00`); const fim=new Date(`1970-01-01T${data.horaFim}:00`); if (fim < inicio) fim.setDate(fim.getDate() + 1); const diffMs=fim - inicio; if (!isNaN(diffMs) && diffMs >= 0) { const h=Math.floor(diffMs/3600000); const m=Math.floor((diffMs%3600000)/60000); duracaoStr=`${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`; } } catch (e) { console.warn("Erro duração", e); } } let anexoCellHTML='-'; if (data.anexos && data.anexos.length > 0) { const anexoElements=data.anexos.map(anexo => { const isImage=anexo.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) || anexo.url.startsWith('data:image'); if (isImage) { return `<a href="#" onclick="const w=window.open(); w.document.write('<img src=\\'${anexo.url}\\' style=\\'max-width:100%\\'>'); return false;" title="${anexo.name}"><img src="${anexo.url}" alt="${anexo.name}" class="w-8 h-8 object-cover rounded shadow-sm"></a>`; } else { return `<span class="text-gray-400 text-xs">${anexo.name} (N/A)</span>`; } }).join(''); anexoCellHTML=`<div class="flex items-center gap-1 flex-wrap">${anexoElements}</div>`; } else if (data.anexoURL) { anexoCellHTML=`<a href="${data.anexoURL}" target="_blank" class="text-blue-600 hover:underline text-xs">${data.anexoNome || 'Ver Ficheiro'}</a>`; } const canEditDelete=currentUserRole === 'admin'; 
             // Ícones SVG
             const editIcon = `<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>`;
             const deleteIcon = `<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`;
@@ -273,7 +427,7 @@
         document.getElementById('cancel-edit-maintenance').addEventListener('click', closeEditModal); function closeEditModal() { editModal.classList.add('hidden'); editModal.classList.remove('flex'); }
 
         // --- ADMIN ---
-        document.getElementById('create-user-form').addEventListener('submit', async (e) => { e.preventDefault(); const form=e.target; const nome=document.getElementById('cu-nome').value; const matricula=document.getElementById('cu-matricula').value; const password=document.getElementById('cu-password').value; const createButton=form.querySelector('button[type="submit"]'); const email=matricula + FAKE_DOMAIN; if (currentUserRole !== 'admin') { showToast("Apenas admins podem criar.", "error"); return; } createButton.disabled=true; createButton.textContent="A criar..."; try { const userCredential=await createUserWithEmailAndPassword(secondaryAuth, email, password); const newUser=userCredential.user; await setDoc(doc(usersCollection, newUser.uid), { nome: nome, email: newUser.email, matricula: matricula, role: 'tecnico', createdAt: serverTimestamp(), status: 'ativo' }); showToast("Técnico criado!"); form.reset(); } catch (error) { if (error.code==='auth/email-already-in-use') { showToast("Matrícula já existe.", "error"); } else { showToast("Erro: " + error.message, "error"); } } finally { createButton.disabled=false; createButton.textContent="Criar Técnico"; } });
+        document.getElementById('create-user-form').addEventListener('submit', async (e) => { e.preventDefault(); const form=e.target; const nome=document.getElementById('cu-nome').value; const matricula=document.getElementById('cu-matricula').value; const password=document.getElementById('cu-password').value; const createButton=form.querySelector('button[type="submit"]'); const email=matricula + FAKE_DOMAIN; if (currentUserRole !== 'admin') { showToast("Apenas admins podem criar.", "error"); return; } createButton.disabled=true; createButton.textContent="A criar..."; try { const userCredential=await createUserWithEmailAndPassword(secondaryAuth, email, password); const newUser=userCredential.user; await setDoc(doc(usersCollection, user.uid), { nome: nome, email: newUser.email, matricula: matricula, role: 'tecnico', createdAt: serverTimestamp(), status: 'ativo' }); showToast("Técnico criado!"); form.reset(); } catch (error) { if (error.code==='auth/email-already-in-use') { showToast("Matrícula já existe.", "error"); } else { showToast("Erro: " + error.message, "error"); } } finally { createButton.disabled=false; createButton.textContent="Criar Técnico"; } });
         let unsubscribeUsers=null; function listenToUsers() { if (currentUserRole !== 'admin') return; if (unsubscribeUsers) unsubscribeUsers(); unsubscribeUsers=onSnapshot(query(usersCollection, orderBy("matricula")), (snapshot) => { const tableBody=document.getElementById('users-table-body'); tableBody.innerHTML=''; if (snapshot.empty) { tableBody.innerHTML='<tr><td colspan="4" class="text-center p-4 text-gray-500">Nenhum utilizador.</td></tr>'; return; } snapshot.forEach(doc => { const data=doc.data(); if (data.matricula===currentUserMatricula) return; const row=document.createElement('tr'); row.className='border-b hover:bg-gray-50'; const isAtivo=data.status !== 'inativo'; const statusClass=isAtivo ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100'; const actionText=isAtivo ? 'Desativar' : 'Ativar'; const actionClass=isAtivo ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'; row.innerHTML=` <td class="p-3 font-medium">${data.nome || '-'}</td> <td class="p-3">${data.matricula}</td> <td class="p-3"> <span class="px-2 py-1 text-xs font-semibold rounded-full ${statusClass}"> ${isAtivo ? 'Ativo' : 'Inativo'} </span> </td> <td class="p-3"> <button data-uid="${doc.id}" data-status="${isAtivo ? 'inativo' : 'ativo'}" class="toggle-status-btn btn btn-sm ${actionClass}"> ${actionText} </button> </td> `; tableBody.appendChild(row); }); }); }
         document.getElementById('users-table-body').addEventListener('click', async (e) => { if (e.target.classList.contains('toggle-status-btn')) { const uid=e.target.dataset.uid; const newStatus=e.target.dataset.status; const userDocRef=doc(usersCollection, uid); try { await updateDoc(userDocRef, { status:newStatus }); showToast(`Utilizador ${newStatus==='ativo' ? 'ativado' : 'desativado'}.`); } catch (error) { showToast("Erro ao atualizar.", "error"); console.error("Erro status:", error); } } });
 
@@ -285,7 +439,27 @@
         document.getElementById('chart-reset-btn').addEventListener('click', () => renderDashboardCharts());
 
         // --- INICIALIZAÇÃO ADMIN ---
-        async function initializeAdminAccount() { if(auth.currentUser) return; const usersSnapshot = await getDocs(usersCollection); if (usersSnapshot.empty) { const matricula = "3617"; const password = "29032002"; const nome = "Nicolas Kasahara"; const email = matricula + FAKE_DOMAIN; try { const userCredential = await createUserWithEmailAndPassword(auth, email, password); const user = userCredential.user; await setDoc(doc(usersCollection, user.uid), { email: user.email, nome: nome, matricula: matricula, role: 'admin', createdAt: serverTimestamp() }); showToast("Conta admin '3617' criada. Faça login.", 'info', 5000); await signOut(auth); } catch (error) { if (error.code !== 'auth/email-already-in-use') console.error("Erro init admin:", error); } } }
+        async function initializeAdminAccount() { 
+            if(auth.currentUser) return; 
+            try {
+                const usersSnapshot = await getDocs(usersCollection); 
+                if (usersSnapshot.empty) { 
+                    const matricula = "3617"; 
+                    const password = "29032002"; 
+                    const nome = "Nicolas Kasahara"; 
+                    const email = matricula + FAKE_DOMAIN; 
+                    try { 
+                        const userCredential = await createUserWithEmailAndPassword(auth, email, password); 
+                        const user = userCredential.user; 
+                        await setDoc(doc(usersCollection, user.uid), { email: user.email, nome: nome, matricula: matricula, role: 'admin', createdAt: serverTimestamp(), status: 'ativo' }); 
+                        showToast("Conta admin '3617' criada. Faça login.", 'info', 5000); 
+                        await signOut(auth); 
+                    } catch (error) { 
+                        if (error.code !== 'auth/email-already-in-use') console.error("Erro init admin:", error); 
+                    } 
+                } 
+            } catch(e) { console.error("Erro ao verificar users:", e); }
+        }
         initializeAdminAccount();
 
     </script>
