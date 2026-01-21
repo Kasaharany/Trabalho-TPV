@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eng SMD - Sistema Técnico v4.0</title>
+    <title>Eng SMD - Sistema Técnico v4.1</title>
     <meta name="theme-color" content="#f8f9fa" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Biblioteca de Compressão Essencial para v4.0 -->
     <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <style>
@@ -198,8 +197,6 @@
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, doc, getDoc, getDocs, onSnapshot, query, orderBy, serverTimestamp, where, addDoc, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         
-        // REMOVIDO: import Storage
-
         // --- CONFIG FIREBASE ---
         const firebaseConfig = { 
             apiKey: "AIzaSyA-siDqx6mhwGZqeN7E-oFJySf2Fr7QXGM", 
@@ -246,7 +243,6 @@
         function showToast(message, type = 'success', duration = 3000) { let bgColor; switch(type) { case 'error': bgColor = "#dc3545"; break; case 'warning': bgColor = "#ffc107"; break; default: bgColor = "#1a73e8"; } Toastify({ text: message, duration: duration, gravity: "top", position: "right", style: { background: bgColor, borderRadius: "6px" }, stopOnFocus: true }).showToast(); }
         
         // --- HELPERS ---
-        // Converte Arquivo para Base64
         const toBase64 = file => new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
@@ -329,38 +325,20 @@
             if (files.length > 0) {
                 submitButton.textContent = "A processar imagens...";
                 try {
-                    // Compressão agressiva para caber no Firestore (max 1MB por doc)
-                    const compressionOptions = { 
-                        maxSizeMB: 0.3, // Máximo 300KB
-                        maxWidthOrHeight: 1024, // Reduz resolução
-                        useWebWorker: true,
-                        fileType: "image/jpeg"
-                    };
-                    
+                    const compressionOptions = { maxSizeMB: 0.3, maxWidthOrHeight: 1024, useWebWorker: true, fileType: "image/jpeg" };
                     const uploadPromises = files.map(async (file) => {
                         let fileToProcess = file;
-                        
-                        // Apenas processa imagens
                         if (file.type.startsWith('image/')) {
                             try { 
                                 fileToProcess = await imageCompression(file, compressionOptions); 
                                 const base64String = await toBase64(fileToProcess);
                                 return { url: base64String, name: file.name };
-                            } catch (e) { 
-                                console.warn("Compressão falhou, ignorando imagem", e); 
-                                return null;
-                            }
+                            } catch (e) { return null; }
                         }
-                        return null; // Ignora PDFs/Outros nesta versão Base64
+                        return null; 
                     });
-
                     const results = await Promise.all(uploadPromises);
                     uploadedAnexos = results.filter(item => item !== null);
-                    
-                    if (uploadedAnexos.length === 0 && files.length > 0) {
-                        showToast("Apenas imagens são permitidas neste modo.", "warning");
-                    }
-
                 } catch (error) {
                     console.error("Erro Processamento:", error);
                     showToast("Erro ao processar imagens.", "error");
@@ -370,7 +348,6 @@
                 }
             }
 
-            // --- SALVAR NO FIRESTORE ---
             const recordData = { 
                 tecnico: document.getElementById('mf-tecnico').value, 
                 tipoMaquina: document.getElementById('mf-maquina').value, 
@@ -386,7 +363,7 @@
                 observacao: document.getElementById('mf-obs').value, 
                 registadoPor: currentUserMatricula, 
                 timestamp: serverTimestamp(), 
-                anexos: uploadedAnexos, // Salva o Base64 aqui dentro
+                anexos: uploadedAnexos, 
                 creatorUid: currentUser.uid 
             };
 
@@ -397,11 +374,7 @@
                 setInitialDateTime(); 
             } catch (error) { 
                 console.error("Erro ao guardar:", error); 
-                if (error.code === 'resource-exhausted') {
-                    showToast("Erro: Imagem muito grande para o banco.", "error");
-                } else {
-                    showToast("Erro ao guardar dados.", "error"); 
-                }
+                showToast("Erro ao guardar dados.", "error"); 
             } finally { 
                 submitButton.disabled = false; 
                 submitButton.textContent = "Guardar"; 
@@ -427,8 +400,111 @@
         document.getElementById('cancel-edit-maintenance').addEventListener('click', closeEditModal); function closeEditModal() { editModal.classList.add('hidden'); editModal.classList.remove('flex'); }
 
         // --- ADMIN ---
-        document.getElementById('create-user-form').addEventListener('submit', async (e) => { e.preventDefault(); const form=e.target; const nome=document.getElementById('cu-nome').value; const matricula=document.getElementById('cu-matricula').value; const password=document.getElementById('cu-password').value; const createButton=form.querySelector('button[type="submit"]'); const email=matricula + FAKE_DOMAIN; if (currentUserRole !== 'admin') { showToast("Apenas admins podem criar.", "error"); return; } createButton.disabled=true; createButton.textContent="A criar..."; try { const userCredential=await createUserWithEmailAndPassword(secondaryAuth, email, password); const newUser=userCredential.user; await setDoc(doc(usersCollection, user.uid), { nome: nome, email: newUser.email, matricula: matricula, role: 'tecnico', createdAt: serverTimestamp(), status: 'ativo' }); showToast("Técnico criado!"); form.reset(); } catch (error) { if (error.code==='auth/email-already-in-use') { showToast("Matrícula já existe.", "error"); } else { showToast("Erro: " + error.message, "error"); } } finally { createButton.disabled=false; createButton.textContent="Criar Técnico"; } });
-        let unsubscribeUsers=null; function listenToUsers() { if (currentUserRole !== 'admin') return; if (unsubscribeUsers) unsubscribeUsers(); unsubscribeUsers=onSnapshot(query(usersCollection, orderBy("matricula")), (snapshot) => { const tableBody=document.getElementById('users-table-body'); tableBody.innerHTML=''; if (snapshot.empty) { tableBody.innerHTML='<tr><td colspan="4" class="text-center p-4 text-gray-500">Nenhum utilizador.</td></tr>'; return; } snapshot.forEach(doc => { const data=doc.data(); if (data.matricula===currentUserMatricula) return; const row=document.createElement('tr'); row.className='border-b hover:bg-gray-50'; const isAtivo=data.status !== 'inativo'; const statusClass=isAtivo ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100'; const actionText=isAtivo ? 'Desativar' : 'Ativar'; const actionClass=isAtivo ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'; row.innerHTML=` <td class="p-3 font-medium">${data.nome || '-'}</td> <td class="p-3">${data.matricula}</td> <td class="p-3"> <span class="px-2 py-1 text-xs font-semibold rounded-full ${statusClass}"> ${isAtivo ? 'Ativo' : 'Inativo'} </span> </td> <td class="p-3"> <button data-uid="${doc.id}" data-status="${isAtivo ? 'inativo' : 'ativo'}" class="toggle-status-btn btn btn-sm ${actionClass}"> ${actionText} </button> </td> `; tableBody.appendChild(row); }); }); }
+        document.getElementById('create-user-form').addEventListener('submit', async (e) => { 
+            e.preventDefault(); 
+            const form=e.target; 
+            const nome=document.getElementById('cu-nome').value; 
+            const matricula=document.getElementById('cu-matricula').value; 
+            const password=document.getElementById('cu-password').value; 
+            const createButton=form.querySelector('button[type="submit"]'); 
+            const email=matricula + FAKE_DOMAIN; 
+            
+            if (currentUserRole !== 'admin') { 
+                showToast("Apenas admins podem criar.", "error"); 
+                return; 
+            } 
+            
+            createButton.disabled=true; 
+            createButton.textContent="A criar..."; 
+            
+            try { 
+                // Tenta criar normalmente
+                const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password); 
+                const newUser = userCredential.user; 
+                await setDoc(doc(usersCollection, newUser.uid), { 
+                    nome: nome, 
+                    email: newUser.email, 
+                    matricula: matricula, 
+                    role: 'tecnico', 
+                    createdAt: serverTimestamp(), 
+                    status: 'ativo' 
+                }); 
+                showToast("Técnico criado!"); 
+                form.reset(); 
+            } catch (error) { 
+                if (error.code === 'auth/email-already-in-use') { 
+                    // TENTA RECUPERAR O UTILIZADOR PERDIDO
+                    try {
+                        const recoveredCredential = await signInWithEmailAndPassword(secondaryAuth, email, password);
+                        const recoveredUser = recoveredCredential.user;
+                        await setDoc(doc(usersCollection, recoveredUser.uid), {
+                            nome: nome,
+                            email: recoveredUser.email,
+                            matricula: matricula,
+                            role: 'tecnico',
+                            createdAt: serverTimestamp(),
+                            status: 'ativo'
+                        }, { merge: true }); // Merge para não sobrescrever se já existir parcial
+                        showToast("Utilizador já existia. Dados recuperados e sincronizados!");
+                        form.reset();
+                    } catch (loginError) {
+                        showToast("Matrícula já existe (e a senha não confere).", "error"); 
+                    }
+                } else { 
+                    showToast("Erro: " + error.message, "error"); 
+                } 
+            } finally { 
+                createButton.disabled=false; 
+                createButton.textContent="Criar Técnico"; 
+            } 
+        });
+
+        let unsubscribeUsers=null; 
+        function listenToUsers() { 
+            if (currentUserRole !== 'admin') return; 
+            if (unsubscribeUsers) unsubscribeUsers(); 
+            
+            // REMOVIDO orderBy DO SERVIDOR para evitar erros de índice/falta de campos
+            unsubscribeUsers = onSnapshot(query(usersCollection), (snapshot) => { 
+                const tableBody = document.getElementById('users-table-body'); 
+                tableBody.innerHTML = ''; 
+                
+                if (snapshot.empty) { 
+                    tableBody.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-gray-500">Nenhum utilizador.</td></tr>'; 
+                    return; 
+                } 
+
+                // Ordenação feita no Javascript (Mais seguro para listas pequenas)
+                const users = [];
+                snapshot.forEach(doc => {
+                    users.push({ id: doc.id, ...doc.data() });
+                });
+                
+                users.sort((a, b) => (a.matricula || "").localeCompare(b.matricula || ""));
+
+                users.forEach(data => { 
+                    if (data.matricula === currentUserMatricula) return; 
+                    const row = document.createElement('tr'); 
+                    row.className = 'border-b hover:bg-gray-50'; 
+                    const isAtivo = data.status !== 'inativo'; 
+                    const statusClass = isAtivo ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100'; 
+                    const actionText = isAtivo ? 'Desativar' : 'Ativar'; 
+                    const actionClass = isAtivo ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'; 
+                    
+                    row.innerHTML = ` 
+                        <td class="p-3 font-medium">${data.nome || '-'}</td> 
+                        <td class="p-3">${data.matricula}</td> 
+                        <td class="p-3"> <span class="px-2 py-1 text-xs font-semibold rounded-full ${statusClass}"> ${isAtivo ? 'Ativo' : 'Inativo'} </span> </td> 
+                        <td class="p-3"> <button data-uid="${data.id}" data-status="${isAtivo ? 'inativo' : 'ativo'}" class="toggle-status-btn btn btn-sm ${actionClass}"> ${actionText} </button> </td> 
+                    `; 
+                    tableBody.appendChild(row); 
+                }); 
+            }, (error) => {
+                console.error("Erro ao listar users:", error);
+                showToast("Erro de permissão ao listar utilizadores", "error");
+            }); 
+        }
+
         document.getElementById('users-table-body').addEventListener('click', async (e) => { if (e.target.classList.contains('toggle-status-btn')) { const uid=e.target.dataset.uid; const newStatus=e.target.dataset.status; const userDocRef=doc(usersCollection, uid); try { await updateDoc(userDocRef, { status:newStatus }); showToast(`Utilizador ${newStatus==='ativo' ? 'ativado' : 'desativado'}.`); } catch (error) { showToast("Erro ao atualizar.", "error"); console.error("Erro status:", error); } } });
 
         // --- EXPORTAÇÃO E GRÁFICOS ---
