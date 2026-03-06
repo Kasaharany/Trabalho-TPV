@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eng SMD v25 | Master System & IA</title>
+    <meta name="theme-color" content="#1a73e8" />
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
+    <script src="https://unpkg.com/brain.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    
+    <style>
+        :root { --primary: #1a73e8; --primary-dark: #1557b0; --bg-page: #f4f7fe; --text-dark: #2b3674; --text-light: #a3aed1; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-page); min-height: 100vh; color: var(--text-dark); overflow-x: hidden; }
+        .glass-card { background: #ffffff; border-radius: 1.25rem; box-shadow: 0 10px 30px -5px rgba(112, 144, 176, 0.12); transition: all 0.3s ease; }
+        
+        .btn { transition: all 0.2s ease-in-out; border-radius: 0.75rem; padding: 0.6rem 1.2rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; }
+        .btn:active { transform: scale(0.96); }
+        .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(26, 115, 232, 0.2); }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-outline { border: 1px solid #e2e8f0; color: #64748b; background: white; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+        .btn-outline:hover { background: #f8fafc; color: #0f172a; }
+        
+        .form-input { width: 100%; padding: 0.75rem 1rem; border: 1px solid #e2e8f0; border-radius: 0.75rem; transition: all 0.2s; background: #fff; font-size: 0.875rem; }
+        .form-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1); }
+        .form-label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-light); margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .menu-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border: 2px solid transparent; }
+        .menu-card:hover { transform: translateY(-5px); border-color: var(--primary); box-shadow: 0 15px 30px -10px rgba(26, 115, 232, 0.3); }
+        
+        .sub-tab-btn { color: var(--text-light); transition: all 0.2s; border-bottom: 3px solid transparent; padding-bottom: 0.5rem; }
+        .sub-tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+
+        .window-content { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .line-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border: 1px solid #e2e8f0; display: flex; flex-direction: column; justify-content: space-between; }
+        .line-card:hover { transform: translateY(-4px); box-shadow: 0 12px 20px -8px rgba(26, 115, 232, 0.3); border-color: var(--primary); }
+
+        .circular-chart { display: block; margin: 0 auto; max-width: 100%; max-height: 200px; }
+        .circle-bg { fill: none; stroke: #f1f5f9; stroke-width: 3.8; }
+        .circle { fill: none; stroke-width: 2.8; stroke-linecap: round; transition: stroke-dasharray 1s ease-out; }
+        .percentage { fill: var(--text-dark); font-family: sans-serif; font-size: 0.6em; text-anchor: middle; font-weight: bold; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); z-index: 9999; display: none; align-items: center; justify-content: center; padding: 1rem; }
+        .custom-scroll::-webkit-scrollbar { height: 8px; width: 8px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        /* Impressão PDF */
+        body.is-printing { background: white !important; }
+        body.is-printing #app-container, body.is-printing #geo-blocking-screen, body.is-printing .modal-overlay { display: none !important; }
+        #print-area { display: none; }
+        @media print {
+            @page { size: landscape; margin: 10mm; }
+            body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            #app-container, #geo-blocking-screen, .modal-overlay { display: none !important; }
+            #print-area { display: block !important; width: 100%; color: black; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+            .print-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 20px; }
+            .print-table th, .print-table td { border: 1px solid #ccc; padding: 6px; }
+            .print-table th { background-color: #f3f4f6 !important; font-weight: bold; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="modal-concluir" class="modal-overlay">
+        <div class="glass-card p-6 md:p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scroll">
+            <h2 class="text-2xl font-extrabold text-[#2b3674] mb-2">Finalizar Intervenção Técnica</h2>
+            <p class="text-sm text-gray-500 mb-6 border-b border-gray-100 pb-4">Registre os horários reais e o que foi executado na máquina.</p>
+            <form id="form-concluir-tarefa" class="space-y-5">
+                <input type="hidden" id="concluir-task-id">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label text-blue-600">Hora de Início (Real)</label>
+                        <input type="time" id="kanban-hora-inicio" required class="form-input bg-blue-50/30 border-blue-100 font-bold text-[#2b3674]">
+                    </div>
+                    <div>
+                        <label class="form-label text-blue-600">Hora de Fim (Real)</label>
+                        <input type="time" id="kanban-hora-fim" required class="form-input bg-blue-50/30 border-blue-100 font-bold text-[#2b3674]">
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label text-[#2b3674]">Ação Executada (Como resolveu?)</label>
+                    <textarea id="kanban-acao-executada" rows="3" required class="form-input bg-gray-50 border-gray-200" placeholder="Ex: Substituí a correia do eixo X, refiz a calibração da câmera e limpei os filtros..."></textarea>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div class="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                        <label class="form-label text-blue-600 flex justify-between items-center mb-3"><span>📸 Foto "Antes"</span><span class="text-[10px] bg-gray-200 text-gray-600 px-2 py-1 rounded">Obrigatório</span></label>
+                        <input type="file" id="kanban-foto-antes" accept="image/*" required class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-full file:bg-blue-50 file:text-blue-700 file:border-0 file:font-bold cursor-pointer hover:file:bg-blue-100 transition-colors"/>
+                    </div>
+                    <div class="p-4 bg-green-50 rounded-xl border border-dashed border-green-300">
+                        <label class="form-label text-green-700 flex justify-between items-center mb-3"><span>✨ Foto "Depois"</span><span class="text-[10px] bg-green-200 text-green-800 px-2 py-1 rounded">Obrigatório</span></label>
+                        <input type="file" id="kanban-foto-depois" accept="image/*" required class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-full file:bg-green-100 file:text-green-700 file:border-0 file:font-bold cursor-pointer hover:file:bg-green-200 transition-colors"/>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+                    <button type="button" onclick="document.getElementById('modal-concluir').style.display='none'" class="btn btn-outline px-6">Cancelar</button>
+                    <button type="submit" id="btn-submit-concluir" class="btn bg-green-500 hover:bg-green-600 text-white px-8 font-bold shadow-lg shadow-green-500/30">✔ Salvar Execução</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-detalhes" class="modal-overlay">
+        <div class="glass-card p-6 md:p-8 w-full max-w-4xl max-h-[90vh] overflow-y-auto custom-scroll">
+            <div class="flex justify-between items-start mb-6 border-b border-gray-100 pb-4">
+                <div>
+                    <h2 class="text-2xl font-extrabold text-[#2b3674]">Auditoria Oficial de Manutenção</h2>
+                    <p class="text-sm text-gray-500 mt-1">Comparativo fotográfico, tempos de execução e descritivo final.</p>
+                </div>
+                <button onclick="document.getElementById('modal-detalhes').style.display='none'" class="text-red-500 font-black text-xl hover:bg-red-50 px-4 py-2 rounded-xl transition-colors">X</button>
+            </div>
+            <div id="detalhes-content" class="space-y-6"></div>
+        </div>
+    </div>
+
+    <div id="geo-blocking-screen">
+        <div class="glass-card p-10 text-center max-w-md w-full mx-4 shadow-2xl border-t-4 border-t-blue-500">
+            <div class="text-5xl mb-6">📍</div>
+            <h2 class="text-2xl font-bold mb-3 text-[#2b3674]">Acesso Seguro</h2>
+            <div id="geo-loading-spinner" class="mx-auto w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+            <p id="geo-status-msg" class="text-gray-500 mt-6 text-sm">Verificando localização via satélite...</p>
+            <button id="retry-geo-btn" class="btn btn-primary w-full mt-4 hidden">Tentar Novamente</button>
+        </div>
+    </div>
+    <div id="app-container">
+        
+        <div id="auth-screen" class="min-h-screen flex items-center justify-center p-6 hidden">
+            <div class="w-full max-w-md glass-card p-10 text-center">
+                <div class="w-16 h-16 bg-[#1a73e8] rounded-2xl mx-auto mb-4 flex items-center justify-center text-white text-3xl font-bold shadow-lg shadow-blue-500/30">E</div>
+                <h1 class="text-3xl font-extrabold text-[#2b3674] mb-8">Eng SMD</h1>
+                <form id="login-form" class="space-y-5 text-left">
+                    <div>
+                        <label class="form-label">Matrícula Operacional</label>
+                        <input type="text" id="login-matricula" required class="form-input" placeholder="Ex: 3617">
+                    </div>
+                    <div>
+                        <label class="form-label">Senha</label>
+                        <input type="password" id="login-password" required class="form-input" placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="w-full btn btn-primary py-3 text-lg mt-2 font-bold shadow-md shadow-blue-500/20">Entrar no Sistema</button>
+                    <button type="button" id="guest-login-btn" class="w-full btn btn-outline py-3 w-full mt-4">Acesso Livre (Visitante)</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="main-app" class="hidden">
+            <header class="bg-white/90 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50 px-4 md:px-8 py-4 flex justify-between items-center shadow-sm">
+                <div class="flex items-center gap-3">
+                    <button id="btn-back-home" class="hidden text-xl mr-2 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors" onclick="window.voltarMenuPrincipal()" title="Voltar ao Menu Principal">🏠</button>
+                    <span class="text-[#2b3674] font-extrabold text-xl tracking-tight">Eng SMD</span>
+                    <span class="bg-blue-50 text-blue-600 text-[10px] px-2.5 py-1 rounded-md font-bold uppercase tracking-wider hidden md:inline-block border border-blue-100">v25 OS System</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span id="user-role-badge" class="hidden md:block text-xs px-3 py-1 rounded-full font-bold uppercase"></span>
+                    <span id="user-identifier" class="hidden md:block text-sm font-bold text-[#2b3674]"></span>
+                    <button id="logout-button" class="text-red-500 font-bold text-sm bg-red-50 px-4 py-2 rounded-lg hover:bg-red-100 transition-colors">Sair</button>
+                </div>
+            </header>
+
+            <main class="p-4 md:p-8 max-w-[1400px] mx-auto">
+                
+                <div id="home-dashboard" class="animation-fadeIn">
+                    <div class="mb-8 text-center md:text-left">
+                        <h2 class="text-3xl font-extrabold text-[#2b3674]">Olá, <span id="welcome-name">Equipe</span> 👋</h2>
+                        <p class="text-gray-500 mt-1">Selecione o módulo de trabalho.</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div id="novo-menu-card" class="glass-card menu-card p-8 flex flex-col items-center text-center" onclick="window.abrirJanela('novo-registo')">
+                            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-3xl mb-4">📝</div>
+                            <h3 class="text-xl font-extrabold text-[#2b3674] mb-2">Registro Avulso</h3>
+                            <p class="text-sm text-gray-500">Falhas e manutenções fora do Kanban.</p>
+                        </div>
+                        <div id="cronograma-menu-card" class="glass-card menu-card p-8 flex flex-col items-center text-center border-b-4 border-b-blue-500" onclick="window.abrirJanela('cronograma')">
+                            <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-2xl flex items-center justify-center text-3xl mb-4 shadow-lg shadow-blue-500/20">📊</div>
+                            <h3 class="text-xl font-extrabold text-[#2b3674] mb-2">Kanban & Gestão</h3>
+                            <p class="text-sm text-gray-500">Cronograma de fábrica e Auditoria.</p>
+                        </div>
+                        <div class="glass-card menu-card p-8 flex flex-col items-center text-center" onclick="window.abrirJanela('historico')">
+                            <div class="w-16 h-16 bg-gray-100 text-gray-600 rounded-2xl flex items-center justify-center text-3xl mb-4">📋</div>
+                            <h3 class="text-xl font-extrabold text-[#2b3674] mb-2">Histórico & Relatórios</h3>
+                            <p class="text-sm text-gray-500">Pesquisa avançada, PDF e Excel.</p>
+                        </div>
+                        <div class="glass-card menu-card p-8 flex flex-col items-center text-center" onclick="window.abrirJanela('graficos')">
+                            <div class="w-16 h-16 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center text-3xl mb-4">📈</div>
+                            <h3 class="text-xl font-extrabold text-[#2b3674] mb-2">Analytics</h3>
+                            <p class="text-sm text-gray-500">Dashboards de KPIs em tempo real.</p>
+                        </div>
+                        <div class="glass-card menu-card p-8 flex flex-col items-center text-center" onclick="window.abrirJanela('ia')">
+                            <div class="w-16 h-16 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center text-3xl mb-4">🧠</div>
+                            <h3 class="text-xl font-extrabold text-[#2b3674] mb-2">SMT Expert AI</h3>
+                            <p class="text-sm text-gray-500">Assistente Gemini de Diagnóstico e Tempos.</p>
+                        </div>
+                        <div id="admin-menu-card" class="glass-card menu-card p-8 flex flex-col items-center text-center border-b-4 border-b-red-500 hidden" onclick="window.abrirJanela('admin')">
+                            <div class="w-16 h-16 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center text-3xl mb-4">⚙️</div>
+                            <h3 class="text-xl font-extrabold text-[#2b3674] mb-2">Painel de Controle</h3>
+                            <p class="text-sm text-gray-500">Gestão de usuários, senhas e segurança.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="novo-registo-window" class="window-content hidden">
+                    <div class="glass-card p-6 md:p-8 max-w-4xl mx-auto relative">
+                        <h2 class="text-2xl font-extrabold text-[#2b3674] mb-6">Registro de Intervenção (Fora do Kanban)</h2>
+                        <form id="maintenance-form" class="space-y-6">
+                            <div>
+                                <label class="form-label">Técnico Executor</label>
+                                <input type="text" id="mf-tecnico" required readonly class="form-input bg-gray-50 text-gray-500 border-none font-medium cursor-not-allowed">
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                <div><label class="form-label">Máquina</label><select id="mf-maquina" required class="form-input bg-gray-50 border-none font-medium text-[#2b3674]"></select></div>
+                                <div><label class="form-label">Linha Produtiva</label><select id="mf-linha" required class="form-input bg-gray-50 border-none font-medium text-[#2b3674]"><option value="">Selecionar...</option><option>IA 1</option><option>IA 2</option><option>IA 3</option><option>SA1</option><option>SB1</option><option>S02</option><option>S03</option><option>S04</option><option>S05</option><option>S06</option><option>S07</option><option>S08</option><option>S09</option><option>S10</option></select></div>
+                                <div><label class="form-label">Módulo (Opcional)</label><select id="mf-modulo" required class="form-input bg-gray-50 border-none font-medium text-[#2b3674]"><option value="">N/A</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-5">
+                                <div><label class="form-label">Data</label><input type="date" id="mf-data" required class="form-input bg-gray-50 border-none font-medium"></div>
+                                <div><label class="form-label">Início</label><input type="time" id="mf-inicio" required class="form-input bg-gray-50 border-none font-medium"></div>
+                                <div><label class="form-label">Fim</label><input type="time" id="mf-fim" required class="form-input bg-gray-50 border-none font-medium"></div>
+                            </div>
+                            <div>
+                                <label class="form-label text-blue-600">Categoria de Intervenção</label>
+                                <select id="mf-tipo" required class="form-input font-bold text-blue-700 bg-blue-50 border-none"><option value="Preventiva">Preventiva</option><option value="Corretiva">Corretiva</option><option value="Preditiva">Preditiva</option><option value="Instalação">Instalação / Setup</option><option value="Outra">Outra</option></select>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div><label class="form-label text-blue-600">Ação Corretiva (O que foi feito?)</label><textarea id="mf-correcao" rows="3" required class="form-input bg-blue-50/30 border-blue-100" placeholder="Ex: Limpeza profunda do Nozzle, Troca da correia..."></textarea></div>
+                                <div><label class="form-label text-red-600">Causa Raiz (Por que falhou?)</label><textarea id="mf-causa" rows="3" required class="form-input bg-red-50/30 border-red-100" placeholder="Ex: Desgaste natural pelo tempo, Falta de lubrificação..."></textarea></div>
+                            </div>
+                            <div>
+                                <label class="form-label font-bold text-purple-600">Erros ou Sintomas (IA)</label>
+                                <textarea id="mf-erros" rows="2" class="form-input bg-purple-50/30 border-purple-100" placeholder="Ex: Erro E-0404, Componente tombado, Vácuo solto..."></textarea>
+                            </div>
+                            <div class="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                                <label class="form-label flex justify-between items-center">Anexos Fotográficos <span class="text-red-500 bg-red-50 px-2 py-0.5 rounded text-[10px] font-bold tracking-wider">MÁX 4 FOTOS</span></label>
+                                <input type="file" id="mf-anexo" accept="image/*" multiple class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:bg-blue-50 file:text-blue-700 file:border-none file:font-bold cursor-pointer hover:file:bg-blue-100 transition-colors"/>
+                            </div>
+                            <button type="submit" id="save-maintenance-btn" class="w-full btn btn-primary py-4 text-lg font-bold shadow-xl shadow-blue-500/30">Salvar Registro Manual</button>
+                        </form>
+                    </div>
+                </div>
+                <div id="cronograma-window" class="window-content hidden">
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                        <div><h1 class="text-3xl font-extrabold text-[#2b3674]">Gestão do Kanban SMT</h1></div>
+                        <button id="toggle-task-form-btn" class="btn btn-primary shadow-lg shadow-blue-500/20 px-6 py-3 font-bold">+ Agendar Ordem Kanban</button>
+                    </div>
+
+                    <div id="agendar-manutencao-container" class="glass-card p-6 mb-8 hidden border-t-4 border-blue-500">
+                        <form id="schedule-form" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div><label class="form-label">Data Alvo</label><input type="date" id="sc-data" required class="form-input bg-gray-50 border-none"></div>
+                                <div><label class="form-label">Técnico Responsável</label><select id="sc-tecnico" required class="form-input bg-gray-50 border-none"></select></div>
+                                <div><label class="form-label">Máquina Alvo</label><select id="sc-maquina" required class="form-input bg-gray-50 border-none"></select></div>
+                                <div><label class="form-label">Linha</label><select id="sc-linha" required class="form-input bg-gray-50 border-none"><option value="">Selecionar...</option><option>IA 1</option><option>IA 2</option><option>IA 3</option><option>SA1</option><option>SB1</option><option>S02</option><option>S03</option><option>S04</option><option>S05</option><option>S06</option><option>S07</option><option>S08</option><option>S09</option><option>S10</option></select></div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div><label class="form-label text-purple-600">Categoria</label><select id="sc-tipo" required class="form-input bg-purple-50 border-none font-bold text-purple-700"><option value="Preventiva">Preventiva</option><option value="Corretiva">Corretiva</option><option value="Preditiva">Preditiva</option></select></div>
+                                <div><label class="form-label">Peças a Trocar (Opcional)</label><input type="text" id="sc-pecas" class="form-input bg-gray-50 border-none" placeholder="Ex: Filtros, Correias"></div>
+                                <div><label class="form-label text-blue-600">Descrição da Tarefa</label><input type="text" id="sc-descricao" required class="form-input bg-blue-50 border-blue-100" placeholder="Ex: Limpeza Semestral Completa"></div>
+                            </div>
+                            <div class="flex justify-end gap-3 mt-4"><button type="button" onclick="document.getElementById('agendar-manutencao-container').classList.add('hidden')" class="btn btn-outline px-6">Ocultar</button><button type="submit" class="btn btn-primary px-8">Adicionar Cartão</button></div>
+                        </form>
+                    </div>
+
+                    <div class="glass-card p-6 md:p-8 min-h-[600px]">
+                        <div class="flex flex-wrap gap-6 border-b border-gray-100 pb-2 mb-8" id="cronograma-subnav">
+                            <button class="sub-tab-btn active font-extrabold text-sm uppercase tracking-wide text-[#1a73e8] border-b-3 border-[#1a73e8]" data-sub="Kanban">Kanban Geral da Fábrica</button>
+                            <button class="sub-tab-btn font-extrabold text-sm uppercase tracking-wide text-gray-400" data-sub="Preventiva">Preventivas</button>
+                            <button class="sub-tab-btn font-extrabold text-sm uppercase tracking-wide text-gray-400" data-sub="Corretiva">Corretivas</button>
+                            <button class="sub-tab-btn font-extrabold text-sm uppercase tracking-wide text-gray-400" data-sub="Preditiva">Preditivas</button>
+                        </div>
+
+                        <div id="view-kanban" class="block animation-fadeIn">
+                            <div class="flex flex-col xl:flex-row gap-8">
+                                <div class="flex-1 flex flex-col gap-4 border-r border-gray-100 pr-4">
+                                    <h3 class="text-xl font-extrabold text-[#2b3674] mb-2 flex items-center gap-2">📊 Aderência Atual por Linha</h3>
+                                    <div id="kanban-lines-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto custom-scroll pr-2"></div>
+                                </div>
+                                <div class="w-full xl:w-[400px] shrink-0 flex flex-col gap-6">
+                                    <div class="p-6 bg-gradient-to-b from-white to-gray-50 border border-gray-100 rounded-2xl shadow-sm">
+                                        <h3 class="font-extrabold text-sm text-center text-[#a3aed1] mb-6 uppercase tracking-widest">Saúde Geral da Fábrica</h3>
+                                        <div class="relative w-full flex justify-center mb-4">
+                                            <svg viewBox="0 0 36 36" class="circular-chart"><path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/><path class="circle" id="smd-global-circle" stroke="#1a73e8" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/><text x="18" y="20.35" class="percentage" id="smd-global-text">0%</text></svg>
+                                        </div>
+                                        <div class="flex justify-between text-center border-t border-gray-200 pt-5">
+                                            <div><p class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Concluído</p><p id="smd-done-count" class="text-2xl font-black text-green-500">0</p></div>
+                                            <div><p class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Pendente</p><p id="smd-pend-count" class="text-2xl font-black text-red-500">0</p></div>
+                                        </div>
+                                    </div>
+                                    <div class="p-6 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                        <h3 class="font-extrabold text-xs text-center text-gray-500 mb-6 uppercase tracking-wider">Resumo do Mês por Categoria</h3>
+                                        <div id="kanban-type-summary" class="space-y-5"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-10 pt-8 border-t border-gray-100">
+                                <h3 class="text-xl font-extrabold text-[#2b3674] mb-6">Quadro Operacional de Tarefas (Resumo Numérico)</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div class="bg-red-50/50 border-2 border-red-100 p-10 rounded-3xl shadow-sm text-center flex flex-col items-center justify-center transition-transform hover:-translate-y-1">
+                                        <h4 class="text-sm font-extrabold text-red-500 uppercase tracking-widest mb-2 flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div> A Fazer (Pendentes)</h4>
+                                        <span class="text-[120px] leading-none font-black text-red-600 drop-shadow-md" id="k-count-todo">0</span>
+                                    </div>
+                                    <div class="bg-green-50/50 border-2 border-green-100 p-10 rounded-3xl shadow-sm text-center flex flex-col items-center justify-center transition-transform hover:-translate-y-1">
+                                        <h4 class="text-sm font-extrabold text-green-600 uppercase tracking-widest mb-2 flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-green-500"></div> Auditadas (Concluídas)</h4>
+                                        <span class="text-[120px] leading-none font-black text-green-600 drop-shadow-md" id="k-count-done">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="k-col-todo" style="display:none;"></div><div id="k-col-done" style="display:none;"></div>
+                        </div>
+
+                        <div id="view-type-grid" class="hidden animation-fadeIn">
+                            <div class="flex justify-between items-center mb-8 bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
+                                <div><h3 class="text-2xl font-extrabold text-[#2b3674]">Desempenho Mensal: <span id="current-type-title" class="text-blue-600 uppercase tracking-wide">--</span></h3><p class="text-sm text-gray-500 mt-1 font-medium">Assegure os 100% em cada linha. Clique na barra para inspecionar e auditar.</p></div>
+                            </div>
+                            <div id="grid-linhas-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6"></div>
+                        </div>
+
+                        <div id="view-line-details" class="hidden animation-fadeIn">
+                            <div class="flex items-center gap-6 mb-8 pb-6 border-b border-gray-100">
+                                <button id="btn-voltar-grid" class="btn bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 shadow-sm px-6">← Voltar</button>
+                                <div><h3 class="text-3xl font-extrabold text-[#2b3674]">Auditoria de Linha: <span id="detail-linha-name" class="text-blue-600">--</span></h3><p class="text-sm text-gray-500 font-medium mt-1">Status e execução para <span id="detail-tipo-name" class="font-bold uppercase tracking-wider text-purple-600 bg-purple-50 px-2 py-0.5 rounded ml-1">--</span></p></div>
+                            </div>
+                            <div id="machines-tasks-container" class="space-y-6"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="historico-window" class="window-content hidden">
+                    <div class="glass-card p-6 md:p-8 overflow-hidden">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-extrabold text-black">Relatório Oficial SMT</h2>
+                        </div>
+                        
+                        <div class="flex flex-wrap items-end gap-4 mb-6 bg-gray-200 p-6 rounded-2xl border border-gray-300">
+                            <div><label class="form-label text-xs !text-black font-extrabold">Data Início</label><input type="date" id="filter-hist-start" class="form-input bg-white border-gray-300 shadow-sm text-black font-bold"></div>
+                            <div><label class="form-label text-xs !text-black font-extrabold">Data Fim</label><input type="date" id="filter-hist-end" class="form-input bg-white border-gray-300 shadow-sm text-black font-bold"></div>
+                            <button id="btn-filter-hist" class="btn btn-primary px-8 py-3 shadow-md">Aplicar Filtro</button>
+                            <button id="btn-clear-hist" class="btn btn-outline px-6 py-3 bg-white">Limpar Filtros</button>
+                            <div class="ml-auto flex gap-3 w-full xl:w-auto mt-4 xl:mt-0">
+                                <button id="print-pdf-btn" class="btn bg-purple-700 text-white shadow-md py-3 px-6 font-bold hover:bg-purple-800">🖨️ PDF Oficial</button>
+                                <button id="export-excel-btn" class="btn bg-green-700 text-white shadow-md py-3 px-6 font-bold hover:bg-green-800">📥 Exportar Excel</button>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto border-2 border-gray-300 rounded-xl">
+                            <table class="w-full text-sm text-left">
+                                <thead class="bg-gray-800 text-white font-extrabold uppercase text-[10px] tracking-widest border-b-2 border-gray-400">
+                                    <tr><th class="p-5">Data / Hora</th><th class="p-5">Técnico</th><th class="p-5">Máquina</th><th class="p-5">Tipo</th><th class="p-5 w-1/3">Descritivo (Ação/Causa)</th><th class="p-5">Código IA</th><th class="p-5">Evidências</th><th class="p-5 text-center">Ações</th></tr>
+                                </thead>
+                                <tbody id="history-table-body" class="divide-y divide-gray-300 bg-white"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="graficos-window" class="window-content hidden">
+                    <div class="glass-card p-6 md:p-8 mb-8">
+                        <h3 class="font-extrabold text-[#2b3674] mb-4 text-lg">📊 Definir Período de Análise</h3>
+                        <div class="flex flex-wrap items-end gap-4">
+                            <div><label class="form-label text-xs">Data Início</label><input type="date" id="filter-chart-start" class="form-input bg-gray-50 border-none w-auto"></div>
+                            <div><label class="form-label text-xs">Data Fim</label><input type="date" id="filter-chart-end" class="form-input bg-gray-50 border-none w-auto"></div>
+                            <button id="btn-filter-chart" class="btn btn-primary px-8 py-3 shadow-md">Atualizar Dashboards</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="glass-card p-8 shadow-lg">
+                            <h3 class="font-extrabold text-sm mb-6 text-center text-[#a3aed1] uppercase tracking-widest border-b border-gray-100 pb-4">Volume Mensal (Qtd)</h3>
+                            <div class="h-[300px] w-full flex items-center justify-center"><canvas id="manutencoesMensaisChart"></canvas></div>
+                        </div>
+                        <div class="glass-card p-8 shadow-lg">
+                            <h3 class="font-extrabold text-sm mb-6 text-center text-[#a3aed1] uppercase tracking-widest border-b border-gray-100 pb-4">Distribuição de Alocação Por Máquina</h3>
+                            <div class="h-[300px] w-full flex items-center justify-center"><canvas id="manutencoesPorMaquinaChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="ia-window" class="window-content hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        
+                        <div class="glass-card p-6 md:p-8 flex flex-col h-[650px] shadow-lg border-t-4 border-blue-500 relative overflow-hidden">
+                            <div class="absolute top-0 right-0 p-4 opacity-5"><span class="text-9xl">✨</span></div>
+                            <h2 class="text-2xl font-extrabold text-[#2b3674] mb-2 flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shadow-lg text-2xl">✨</div> 
+                                SMT Gemini Expert
+                            </h2>
+                            <p class="text-sm text-gray-500 mb-4 font-medium z-10">Inteligência Artificial Google conectada à sua fábrica.</p>
+                            
+                            <div id="gemini-chat-box" class="flex-1 bg-gray-50 rounded-2xl border border-gray-200 p-5 mb-4 overflow-y-auto custom-scroll space-y-6 z-10 flex flex-col">
+                                <div class="flex items-start gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold shrink-0 shadow-sm border border-blue-200">AI</div>
+                                    <div class="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm text-sm text-[#2b3674] font-medium border border-gray-100">
+                                        Olá! Eu sou seu Engenheiro SMT Assistente (powered by Gemini). Como posso ajudar a resolver as paradas de linha hoje?
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex gap-3 z-10">
+                                <textarea id="gemini-input" rows="2" class="form-input bg-white border-gray-300 resize-none shadow-inner" placeholder="Ex: O forno Heller está dando erro de temperatura na zona 3..."></textarea>
+                                <button id="btn-send-gemini" class="btn bg-[#1a73e8] hover:bg-[#1557b0] text-white px-6 shadow-md h-auto font-bold text-lg">Enviar</button>
+                            </div>
+                        </div>
+
+                        <div class="glass-card p-8 shadow-lg border-t-4 border-purple-500 h-[650px]">
+                            <h2 class="text-2xl font-extrabold text-[#2b3674] mb-4 flex items-center gap-3"><div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 text-white flex items-center justify-center shadow-lg text-2xl">⏳</div> Previsão de Tempos (ML)</h2>
+                            <p class="text-sm text-gray-500 mb-8 font-medium">A Rede Neural (Brain.js) calcula a duração exata da tarefa com base no histórico real dos técnicos.</p>
+                            <button id="train-ai-btn" class="w-full btn btn-outline border-purple-200 text-purple-600 hover:bg-purple-50 mb-8 py-4 font-bold shadow-sm">🔄 Otimizar Rede Neural com o Histórico</button>
+                            <div class="space-y-5 opacity-40 pointer-events-none transition-all duration-500 bg-[#f4f7fe] p-6 rounded-2xl border border-gray-100" id="ai-prediction-card">
+                                <div><label class="form-label text-purple-600">Máquina Alvo</label><select id="ai-maquina" class="form-input bg-white border-none shadow-sm"></select></div>
+                                <div><label class="form-label text-purple-600">Tipo de Intervenção</label><select id="ai-tipo" class="form-input bg-white border-none shadow-sm"><option>Preventiva</option><option>Corretiva</option></select></div>
+                                <button id="predict-btn" class="w-full btn bg-purple-600 hover:bg-purple-700 text-white py-4 font-bold shadow-lg">Calcular Tempo Requerido</button>
+                                <div id="ai-result" class="text-center hidden pt-6 border-t border-gray-200 mt-6">
+                                    <span class="text-gray-500 font-bold uppercase text-xs tracking-widest">A Tarefa Demorará:</span>
+                                    <span class="text-6xl font-black text-purple-600 block mt-2 tracking-tighter"><span id="ai-minutes">0</span> <span class="text-2xl text-purple-400 font-bold tracking-normal">min</span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="admin-window" class="window-content hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="glass-card p-8 border-t-4 border-gray-800 shadow-lg">
+                            <h2 class="text-2xl font-extrabold text-[#2b3674] mb-6">Registro de Usuários</h2>
+                            <form id="create-user-form" class="space-y-5">
+                                <div><label class="form-label">Nome Completo</label><input type="text" id="cu-nome" required class="form-input bg-[#f4f7fe] border-none" placeholder="Ex: João Silva"></div>
+                                <div><label class="form-label">Matrícula (Login)</label><input type="text" id="cu-matricula" required class="form-input bg-[#f4f7fe] border-none" placeholder="Ex: 5040"></div>
+                                <div><label class="form-label">Cargo (Nível de Acesso)</label><select id="cu-role" required class="form-input bg-purple-50 text-purple-700 border-none font-bold"><option value="tecnico">Técnico (Padrão)</option><option value="programador">Programador</option><option value="lider">Líder / Chefia</option><option value="gerente">Gerente</option></select></div>
+                                <div><label class="form-label">Senha</label><input type="password" id="cu-password" required class="form-input bg-[#f4f7fe] border-none" placeholder="Mínimo 6 caracteres"></div>
+                                <button type="submit" class="w-full btn bg-gray-800 hover:bg-gray-900 text-white py-4 font-bold shadow-xl">Cadastrar no Sistema</button>
+                            </form>
+                        </div>
+                        <div class="glass-card p-8 shadow-lg border-t-4 border-gray-300">
+                            <h2 class="text-2xl font-extrabold text-[#2b3674] mb-6">Máquinas Autorizadas</h2>
+                            <div class="flex gap-3 mb-6">
+                                <input type="text" id="new-machine-name" placeholder="Ex: Fuji NXT" class="form-input bg-[#f4f7fe] border-none">
+                                <button id="add-machine-btn" class="btn btn-primary px-8 shadow-md">Inserir Máquina</button>
+                            </div>
+                            <div class="bg-gray-50 rounded-xl border border-gray-100 p-2">
+                                <ul id="machine-list-admin" class="space-y-2 h-[300px] overflow-y-auto custom-scroll pr-2"></ul>
+                            </div>
+                        </div>
+                        <div class="glass-card p-8 lg:col-span-2 shadow-lg">
+                            <h2 class="text-2xl font-extrabold text-[#2b3674] mb-6">Painel de Controle da Equipe</h2>
+                            <div class="overflow-x-auto border border-gray-100 rounded-xl">
+                                <table class="w-full text-sm text-left">
+                                    <thead class="bg-[#f4f7fe] text-[#a3aed1] font-bold uppercase tracking-wider text-xs">
+                                        <tr><th class="p-4 rounded-tl-xl">Colaborador</th><th class="p-4">Matrícula</th><th class="p-4">Permissão</th><th class="p-4">Estado</th><th class="p-4 rounded-tr-xl text-center">Ação de Segurança</th></tr>
+                                    </thead>
+                                    <tbody id="users-table-body" class="divide-y divide-gray-100 bg-white"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script type="module">
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, doc, getDoc, getDocs, onSnapshot, query, orderBy, serverTimestamp, addDoc, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        
+        // --- GEOFENCING LIVRE ---
+        const FACTORY_LAT = -3.0526491129429134; const FACTORY_LNG = -60.02283625107389; const ALLOWED_RADIUS_METERS = 9999999; 
+        function getDistanceFromLatLonInM(lat1, lon1, lat2, lon2) { const R = 6371000; const dLat = (lat2-lat1)*(Math.PI/180); const dLon = (lon2-lon1)*(Math.PI/180); const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1*(Math.PI/180)) * Math.cos(lat2*(Math.PI/180)) * Math.sin(dLon/2) * Math.sin(dLon/2); return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))); }
+        function checkGeofence() { if (!navigator.geolocation) return; navigator.geolocation.getCurrentPosition( (pos) => { if (getDistanceFromLatLonInM(FACTORY_LAT, FACTORY_LNG, pos.coords.latitude, pos.coords.longitude) <= ALLOWED_RADIUS_METERS) { document.getElementById('geo-blocking-screen').style.display = 'none'; document.getElementById('auth-screen').classList.remove('hidden'); initAuth(); } else { document.getElementById('geo-loading-spinner').style.display = 'none'; document.getElementById('geo-status-msg').innerHTML = `<span class='text-red-600 font-bold'>Acesso Bloqueado. Fora da fábrica.</span>`; document.getElementById('retry-geo-btn').classList.remove('hidden'); } }, (error) => { document.getElementById('geo-loading-spinner').style.display = 'none'; document.getElementById('geo-status-msg').innerHTML = `<span class='text-red-600 font-bold'>Localização desativada.</span>`; document.getElementById('retry-geo-btn').classList.remove('hidden'); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 } ); }
+        document.getElementById('retry-geo-btn').addEventListener('click', () => { document.getElementById('geo-status-msg').innerHTML = "Aguarde..."; document.getElementById('retry-geo-btn').classList.add('hidden'); document.getElementById('geo-loading-spinner').style.display = 'block'; checkGeofence(); });
+        window.addEventListener('load', checkGeofence);
+
+        // --- FIREBASE SETUP ---
+        const firebaseConfig = { apiKey: "AIzaSyA-siDqx6mhwGZqeN7E-oFJySf2Fr7QXGM", authDomain: "engsmdsistema-novo.firebaseapp.com", projectId: "engsmdsistema-novo", storageBucket: "engsmdsistema-novo.appspot.com", messagingSenderId: "780550032391", appId: "1:780550032391:web:e69d525969c4c752bfeea2" };
+        const app = !getApps().length ? initializeApp(firebaseConfig) : getApp(); const auth = getAuth(app); const db = getFirestore(app);
+        let secondaryApp; try { secondaryApp = getApps().length > 1 ? getApp("Secondary") : initializeApp(firebaseConfig, "Secondary"); } catch(e) { secondaryApp = app; }
+        const secondaryAuth = getAuth(secondaryApp); const FAKE_DOMAIN = "@engsmd.local";
+        const usersCollection = collection(db, `artifacts/${firebaseConfig.projectId}/public/data/users`); const maintenanceCollection = collection(db, `artifacts/${firebaseConfig.projectId}/public/data/manutencoes`); const machinesCollection = collection(db, `artifacts/${firebaseConfig.projectId}/public/data/machineList`); const cronogramaCollection = collection(db, `artifacts/${firebaseConfig.projectId}/public/data/cronograma`);
+
+        let currentUserRole = null; let currentUserMatricula = null; let currentUserNome = null; let trainedNet = null; let allHistoryRecords = []; let allScheduleRecords = []; let notifiedToday = false;
+        let currentScheduleType = 'Kanban'; let currentActiveLine = null; 
+        Chart.register(ChartDataLabels); const toBase64 = file => new Promise((resolve, reject) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = () => resolve(reader.result); reader.onerror = error => reject(error); });
+
+        // --- APP LAUNCHER ---
+        window.abrirJanela = (janelaId) => {
+            const home = document.getElementById('home-dashboard'); if(home) home.classList.add('hidden');
+            document.querySelectorAll('.window-content').forEach(w => w.classList.add('hidden'));
+            const win = document.getElementById(janelaId + '-window'); if(win) win.classList.remove('hidden');
+            const btn = document.getElementById('btn-back-home'); if(btn) btn.classList.remove('hidden');
+            if(janelaId === 'graficos') renderCharts();
+        };
+        window.voltarMenuPrincipal = () => {
+            document.querySelectorAll('.window-content').forEach(w => w.classList.add('hidden'));
+            const home = document.getElementById('home-dashboard'); if(home) home.classList.remove('hidden');
+            const btn = document.getElementById('btn-back-home'); if(btn) btn.classList.add('hidden');
+        };
+
+        // --- AUTH ---
+        function initAuth() { 
+            onAuthStateChanged(auth, async (user) => { 
+                if (user) { 
+                    const authSc = document.getElementById('auth-screen'); if(authSc) authSc.classList.add('hidden'); 
+                    const mainApp = document.getElementById('main-app'); if(mainApp) mainApp.classList.remove('hidden'); 
+                    if(user.email && user.email.startsWith("3617")) { setupUI("admin", "Nicolas Kasahara", "3617"); } 
+                    else if (user.isAnonymous) { setupUI("visitante", "Acesso Limitado", "N/A"); } 
+                    else { 
+                        try { 
+                            const snap = await getDoc(doc(usersCollection, user.uid)); 
+                            if (snap.exists() && snap.data().status !== 'inativo') { const d = snap.data(); setupUI(d.role || 'tecnico', d.nome || 'Usuário', d.matricula || 'N/A'); } 
+                            else { Toastify({ text: "Conta Bloqueada ou Inexistente.", style: { background: "#dc3545" } }).showToast(); signOut(auth); } 
+                        } catch(e) { console.error(e); signOut(auth); } 
+                    } 
+                } else { 
+                    const authSc = document.getElementById('auth-screen'); if(authSc) authSc.classList.remove('hidden'); 
+                    const mainApp = document.getElementById('main-app'); if(mainApp) mainApp.classList.add('hidden'); 
+                } 
+            }); 
+        }
+        function setupUI(role, nome, matricula) { 
+            currentUserRole = role; currentUserMatricula = matricula; currentUserNome = nome; 
+            const uidEl = document.getElementById('user-identifier'); if(uidEl) uidEl.textContent = `${matricula} - ${nome}`; 
+            const tecEl = document.getElementById('mf-tecnico'); if(tecEl) tecEl.value = nome; 
+            const welEl = document.getElementById('welcome-name'); if(welEl) welEl.textContent = nome ? nome.split(' ')[0] : 'Equipe';
+            const badge = document.getElementById('user-role-badge'); if(badge) { badge.textContent = role; badge.className = `hidden md:block text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-widest ${role === 'admin' || role === 'gerente' ? 'bg-red-100 text-red-700' : role === 'lider' ? 'bg-yellow-100 text-yellow-700' : role === 'programador' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`; }
+            const isLider = role === 'admin' || role === 'gerente' || role === 'lider'; 
+            const admCard = document.getElementById('admin-menu-card'); if(admCard) admCard.classList.toggle('hidden', !isLider); 
+            const formBtn = document.getElementById('toggle-task-form-btn'); if(formBtn) formBtn.classList.toggle('hidden', !isLider); 
+            const nvCard = document.getElementById('novo-menu-card'); if(nvCard) nvCard.classList.toggle('hidden', role === 'visitante'); 
+            const croCard = document.getElementById('cronograma-menu-card'); if(croCard) croCard.classList.toggle('hidden', role === 'visitante'); 
+            initMachines(); listenToMaintenanceRecords(); listenToSchedule(); if(isLider) { initTechniciansList(); listenToUsers(); } 
+            const nav = document.querySelector('nav.flex.space-x-2'); if(nav) nav.style.display = 'none'; 
+            if(typeof window.voltarMenuPrincipal === 'function') window.voltarMenuPrincipal();
+        }
+        document.getElementById('login-form').addEventListener('submit', e => { e.preventDefault(); signInWithEmailAndPassword(auth, document.getElementById('login-matricula').value + FAKE_DOMAIN, document.getElementById('login-password').value).catch(() => Toastify({ text: "Login Inválido.", style: { background: "#dc3545" } }).showToast()); });
+        document.getElementById('guest-login-btn').addEventListener('click', () => signInAnonymously(auth)); document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
+
+        // --- FALLBACKS ---
+        function initMachines() { onSnapshot(query(machinesCollection, orderBy('name')), snap => { const machines = []; snap.forEach(d => machines.push({ id: d.id, ...d.data() })); const selects = [document.getElementById('mf-maquina'), document.getElementById('ai-maquina'), document.getElementById('sc-maquina')]; selects.forEach(sel => { if(!sel) return; sel.innerHTML = '<option value="">Selecione a Máquina...</option>'; if (machines.length === 0) { sel.innerHTML += `<option value="DEK Horizon (Exemplo)">DEK Horizon (Exemplo)</option><option value="NXT III (Exemplo)">NXT III (Exemplo)</option>`; } else { machines.forEach(m => sel.innerHTML += `<option value="${m.name}">${m.name}</option>`); } }); const lst = document.getElementById('machine-list-admin'); if(lst) { lst.innerHTML=''; machines.forEach(m => { lst.innerHTML += `<li class="flex justify-between items-center bg-white p-4 mb-2 rounded-xl border border-gray-100 shadow-sm font-bold text-[#2b3674]"><span>${m.name}</span><button onclick="window.delMachine('${m.id}')" class="text-red-500 hover:bg-red-50 px-3 py-1 rounded transition-colors text-sm">X Remover</button></li>`; }); } }); }
+        function initTechniciansList() { onSnapshot(query(usersCollection), snap => { const s = document.getElementById('sc-tecnico'); if(!s) return; s.innerHTML = '<option value="Qualquer">Qualquer Técnico</option>'; if (snap.empty) { s.innerHTML += `<option value="João Técnico (Exemplo)">João Técnico (Exemplo)</option>`; } else { snap.forEach(d => { if(d.data().status !== 'inativo') { s.innerHTML += `<option value="${d.data().nome}">${d.data().nome}</option>`; } }); } }); }
+        document.getElementById('add-machine-btn').addEventListener('click', async () => { const i = document.getElementById('new-machine-name'); if(i.value) { await addDoc(machinesCollection, { name: i.value.trim().toUpperCase(), createdAt: serverTimestamp() }); i.value=''; Toastify({ text: "Máquina Registrada!", style: {background: "#1a73e8"} }).showToast(); } }); window.delMachine = async (id) => { if(confirm("Remover máquina?")) await deleteDoc(doc(machinesCollection, id)); };
+
+        // --- CRONOGRAMA KANBAN ---
+        document.querySelectorAll('.sub-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.sub-tab-btn').forEach(b => { b.classList.remove('active', 'text-[#1a73e8]', 'border-b-3', 'border-[#1a73e8]'); b.classList.add('text-gray-400'); });
+                btn.classList.remove('text-gray-400'); btn.classList.add('active', 'text-[#1a73e8]', 'border-b-3', 'border-[#1a73e8]');
+                const subType = btn.getAttribute('data-sub');
+                if (subType === 'Kanban') { document.getElementById('view-type-grid').classList.add('hidden'); document.getElementById('view-line-details').classList.add('hidden'); document.getElementById('view-kanban').classList.remove('hidden'); renderKanbanGeneral(); } 
+                else { currentScheduleType = subType; document.getElementById('view-kanban').classList.add('hidden'); document.getElementById('view-line-details').classList.add('hidden'); document.getElementById('view-type-grid').classList.remove('hidden'); renderLineGrid(); }
+            });
+        });
+        document.getElementById('btn-voltar-grid').addEventListener('click', () => { document.getElementById('view-line-details').classList.add('hidden'); if(currentScheduleType === 'Visão Global') { document.getElementById('view-kanban').classList.remove('hidden'); renderKanbanGeneral(); } else { document.getElementById('view-type-grid').classList.remove('hidden'); renderLineGrid(); } currentActiveLine = null; });
+        document.getElementById('toggle-task-form-btn').addEventListener('click', () => { document.getElementById('agendar-manutencao-container').classList.toggle('hidden'); });
+        document.getElementById('schedule-form').addEventListener('submit', async (e) => { e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]'); btn.disabled = true; try { await addDoc(cronogramaCollection, { dataPrevista: document.getElementById('sc-data').value, tecnico: document.getElementById('sc-tecnico').value, maquina: document.getElementById('sc-maquina').value, linha: document.getElementById('sc-linha').value, tipo: document.getElementById('sc-tipo').value, pecas: document.getElementById('sc-pecas').value, descricao: document.getElementById('sc-descricao').value, status: 'Pendente', criadoPor: currentUserMatricula, createdAt: serverTimestamp() }); Toastify({ text: "Agendado!", style: {background: "#10b981"} }).showToast(); e.target.reset(); document.getElementById('agendar-manutencao-container').classList.add('hidden'); } catch(e) { alert("Erro de rede."); } finally { btn.disabled = false; } });
+        function listenToSchedule() { onSnapshot(query(cronogramaCollection, orderBy('dataPrevista', 'asc')), snap => { allScheduleRecords = []; snap.forEach(d => { allScheduleRecords.push({ id: d.id, ...d.data() }); }); renderLineGrid(); if(currentActiveLine) renderLineDetails(); renderKanbanGeneral(); checkDailyNotifications(); }); }
+
+        window.abrirModalConcluir = (id) => { document.getElementById('concluir-task-id').value = id; document.getElementById('form-concluir-tarefa').reset(); document.getElementById('modal-concluir').style.display = 'flex'; };
+        document.getElementById('form-concluir-tarefa').addEventListener('submit', async (e) => {
+            e.preventDefault(); const btn = document.getElementById('btn-submit-concluir'); btn.disabled = true; btn.textContent = "Auditando...";
+            try {
+                const id = document.getElementById('concluir-task-id').value;
+                const fileAntes = document.getElementById('kanban-foto-antes').files[0]; const fileDepois = document.getElementById('kanban-foto-depois').files[0];
+                const horaInicio = document.getElementById('kanban-hora-inicio').value; const horaFim = document.getElementById('kanban-hora-fim').value; const acaoExecutada = document.getElementById('kanban-acao-executada').value;
+                const opt = { maxSizeMB: 0.1, maxWidthOrHeight: 800, useWebWorker: true }; let urlAntes = null; let urlDepois = null;
+                if(fileAntes) { const c1 = await imageCompression(fileAntes, opt); urlAntes = await toBase64(c1); } if(fileDepois) { const c2 = await imageCompression(fileDepois, opt); urlDepois = await toBase64(c2); }
+                await updateDoc(doc(cronogramaCollection, id), { status: 'Concluído', concluidoPor: currentUserNome, dataConclusao: new Date().toISOString(), fotoAntes: urlAntes, fotoDepois: urlDepois, horaInicio: horaInicio, horaFim: horaFim, acaoExecutada: acaoExecutada });
+                Toastify({text: "Serviço Concluído!", style: {background: "#10b981"}}).showToast(); document.getElementById('modal-concluir').style.display = 'none';
+            } catch(err) { alert("Erro de Upload."); } finally { btn.disabled = false; btn.textContent = "✔ Salvar Execução"; }
+        });
+
+        window.abrirModalAuditoria = (id) => {
+            const task = allScheduleRecords.find(t => t.id === id); if(!task) return; const c = document.getElementById('detalhes-content'); let imgHtml = '';
+            if(task.fotoAntes || task.fotoDepois) { imgHtml = `<div class="grid grid-cols-2 gap-6 mt-6"><div class="border-2 border-dashed border-gray-300 rounded-2xl p-4 bg-white text-center shadow-sm"><span class="bg-gray-600 text-white text-[10px] font-bold px-4 py-1 rounded-md mb-2 inline-block">📷 ANTES</span>${task.fotoAntes ? `<img src="${task.fotoAntes}" class="rounded-xl w-full h-auto mx-auto shadow-sm border border-gray-100 object-cover">` : '<span class="text-xs text-gray-400 block mt-4">Sem foto</span>'}</div><div class="border-2 border-dashed border-green-400 rounded-2xl p-4 bg-green-50/30 text-center shadow-sm"><span class="bg-green-500 text-white text-[10px] font-bold px-4 py-1 rounded-md mb-2 inline-block">✨ DEPOIS</span>${task.fotoDepois ? `<img src="${task.fotoDepois}" class="rounded-xl w-full h-auto mx-auto shadow-sm border border-green-200 object-cover">` : '<span class="text-xs text-gray-400 block mt-4">Sem foto</span>'}</div></div>`; } 
+            else { imgHtml = `<div class="mt-6 p-6 bg-red-50 rounded-2xl border border-red-100 text-center"><p class="text-red-600 font-bold">⚠️ Fechado sem evidências fotográficas.</p></div>`; }
+            let dataFim = task.dataConclusao ? new Date(task.dataConclusao).toLocaleDateString('pt-BR') : 'N/A'; let horaInicio = task.horaInicio || '--:--'; let horaFim = task.horaFim || '--:--'; let acaoExecutada = task.acaoExecutada || 'Ação não descrita.';
+            c.innerHTML = `<div class="bg-gradient-to-r from-[#1a73e8] to-[#1557b0] p-6 rounded-2xl shadow-lg mb-6 text-white flex justify-between items-center"><div><p class="text-[10px] text-blue-200 uppercase font-bold tracking-widest mb-1">Máquina / Linha</p><p class="font-extrabold text-2xl">${task.maquina} <span class="text-blue-200 text-lg font-medium border-l border-blue-400 pl-2 ml-2">${task.linha}</span></p></div><div class="text-right"><span class="font-black text-white bg-white/20 border border-white/30 px-4 py-2 rounded-xl text-xs uppercase tracking-widest shadow-sm">${task.tipo}</span></div></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="border border-gray-200 rounded-2xl bg-white shadow-sm overflow-hidden"><div class="bg-gray-50 border-b border-gray-200 p-4"><span class="text-[10px] font-extrabold text-blue-600 uppercase tracking-wider">📝 Solicitado</span></div><div class="p-4"><p class="text-[#2b3674] font-bold">${task.descricao}</p></div></div><div class="border border-green-200 rounded-2xl bg-green-50/30 shadow-sm overflow-hidden"><div class="bg-green-100 border-b border-green-200 p-4 flex justify-between items-center"><span class="text-[10px] font-extrabold text-green-700 uppercase tracking-wider">✅ Executado</span><span class="text-green-700">✔️</span></div><div class="p-4"><p class="text-[#2b3674] font-bold text-lg">${acaoExecutada}</p>${task.pecas ? `<p class="text-xs text-gray-500 mt-2"><b>Peças:</b> ${task.pecas}</p>` : ''}</div></div></div><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6"><div class="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm flex items-center gap-4"><div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-xl">👤</div><div><p class="text-[10px] text-gray-400 uppercase font-bold mb-1">Executor</p><p class="font-extrabold text-[#2b3674] text-base">${task.concluidoPor || task.tecnico}</p></div></div><div class="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm flex items-center gap-4"><div class="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-xl">📅</div><div><p class="text-[10px] text-gray-400 uppercase font-bold mb-1">Data Fecho</p><p class="font-extrabold text-[#2b3674] text-base">${dataFim}</p></div></div><div class="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm flex items-center gap-4"><div class="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center text-xl">⏱️</div><div><p class="text-[10px] text-gray-400 uppercase font-bold mb-1">Horário</p><p class="font-extrabold text-[#2b3674] text-base">${horaInicio} às ${horaFim}</p></div></div></div>${imgHtml}`;
+            document.getElementById('modal-detalhes').style.display = 'flex';
+        };
+
+        window.abrirAuditoriaGlobal = (linha) => { currentActiveLine = linha; currentScheduleType = 'Visão Global'; document.getElementById('detail-linha-name').textContent = linha; document.getElementById('detail-tipo-name').textContent = currentScheduleType; document.getElementById('view-kanban').classList.add('hidden'); document.getElementById('view-type-grid').classList.add('hidden'); document.getElementById('view-line-details').classList.remove('hidden'); renderLineDetails(); };
+        window.openLineDetails = (linha) => { currentActiveLine = linha; document.getElementById('detail-linha-name').textContent = linha; document.getElementById('detail-tipo-name').textContent = currentScheduleType; document.getElementById('view-type-grid').classList.add('hidden'); document.getElementById('view-line-details').classList.remove('hidden'); renderLineDetails(); };
+
+        function renderKanbanGeneral() {
+            const linesContainer = document.getElementById('kanban-lines-container'); const summaryContainer = document.getElementById('kanban-type-summary');
+            if(!linesContainer || !summaryContainer) return; linesContainer.innerHTML = ''; summaryContainer.innerHTML = '';
+            let countTodo = 0, countDone = 0, totalGlobal = 0, doneGlobal = 0; const currentMonth = new Date().toISOString().slice(0,7); 
+            const lineStats = {}; const typeStats = { 'Preventiva': { total: 0, done: 0 }, 'Corretiva': { total: 0, done: 0 }, 'Preditiva': { total: 0, done: 0 } };
+            const todasLinhas = ['IA 1', 'IA 2', 'IA 3', 'SA1', 'SB1', 'S02', 'S03', 'S04', 'S05', 'S06', 'S07', 'S08', 'S09', 'S10'];
+            todasLinhas.forEach(l => lineStats[l] = { total: 0, done: 0 });
+            allScheduleRecords.forEach(d => {
+                if(d.dataPrevista && d.dataPrevista.startsWith(currentMonth)) {
+                    totalGlobal++; if(lineStats[d.linha]) lineStats[d.linha].total++; if(typeStats[d.tipo]) typeStats[d.tipo].total++;
+                    if(d.status === 'Concluído') { doneGlobal++; countDone++; if(lineStats[d.linha]) lineStats[d.linha].done++; if(typeStats[d.tipo]) typeStats[d.tipo].done++; } else { countTodo++; }
+                }
+            });
+            const elTodo = document.getElementById('k-count-todo'); const elDone = document.getElementById('k-count-done'); if(elTodo) elTodo.textContent = countTodo; if(elDone) elDone.textContent = countDone;
+            todasLinhas.forEach(linha => {
+                const lTotal = lineStats[linha].total; const lDone = lineStats[linha].done; let perc = lTotal === 0 ? 0 : Math.round((lDone / lTotal) * 100);
+                let barColor = 'bg-blue-500'; if(perc === 100) barColor = 'bg-green-500'; else if (perc < 50 && lTotal > 0) barColor = 'bg-red-500';
+                linesContainer.innerHTML += `<div onclick="window.abrirAuditoriaGlobal('${linha}')" class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between cursor-pointer hover:border-[#1a73e8] transition-all group"><div class="w-16"><span class="font-extrabold text-[#2b3674] text-sm group-hover:text-[#1a73e8]">${linha}</span></div><div class="flex-1 mx-4"><div class="w-full bg-gray-100 rounded-full h-3"><div class="${barColor} h-3 rounded-full transition-all duration-1000 shadow-sm" style="width: ${perc}%"></div></div></div><div class="w-12 text-right"><span class="font-black text-sm text-[#2b3674] group-hover:text-[#1a73e8]">${perc}%</span></div></div>`;
+            });
+            ['Preventiva', 'Corretiva', 'Preditiva'].forEach(tipo => {
+                const tot = typeStats[tipo].total; const dn = typeStats[tipo].done; const perc = tot === 0 ? 0 : Math.round((dn/tot)*100);
+                let colorClass = 'bg-[#1a73e8]'; let textClass = 'text-[#1a73e8]'; if(tipo === 'Corretiva') { colorClass = 'bg-red-500'; textClass = 'text-red-500'; } if(tipo === 'Preditiva') { colorClass = 'bg-purple-500'; textClass = 'text-purple-600'; }
+                summaryContainer.innerHTML += `<div class="mb-4"><div class="flex justify-between items-center text-[11px] font-extrabold mb-1"><span class="${textClass} uppercase tracking-wider">${tipo}</span><span class="text-gray-600">${dn} Feitas / ${tot} <span class="${textClass} ml-1">(${perc}%)</span></span></div><div class="w-full bg-gray-100 rounded-full h-3"><div class="${colorClass} h-3 rounded-full shadow-sm transition-all duration-1000" style="width: ${perc}%"></div></div></div>`;
+            });
+            let globalPerc = totalGlobal === 0 ? 0 : Math.round((doneGlobal / totalGlobal) * 100);
+            document.getElementById('smd-done-count').textContent = doneGlobal; document.getElementById('smd-pend-count').textContent = (totalGlobal - doneGlobal);
+            const circle = document.getElementById('smd-global-circle'); const text = document.getElementById('smd-global-text');
+            if(circle && text) { circle.setAttribute('stroke-dasharray', `${globalPerc}, 100`); text.textContent = `${globalPerc}%`; if(globalPerc < 50) circle.setAttribute('stroke', '#ef4444'); else if(globalPerc < 80) circle.setAttribute('stroke', '#f59e0b'); else circle.setAttribute('stroke', '#10b981'); }
+        }
+
+        function renderLineGrid() {
+            const container = document.getElementById('grid-linhas-container'); if(!container) return; container.innerHTML = ''; document.getElementById('current-type-title').textContent = currentScheduleType;
+            const todasLinhas = ['IA 1', 'IA 2', 'IA 3', 'SA1', 'SB1', 'S02', 'S03', 'S04', 'S05', 'S06', 'S07', 'S08', 'S09', 'S10']; const currentMonth = new Date().toISOString().slice(0,7); 
+            todasLinhas.forEach(linha => {
+                const tasks = allScheduleRecords.filter(t => t.linha === linha && t.tipo === currentScheduleType && t.dataPrevista && t.dataPrevista.startsWith(currentMonth));
+                const total = tasks.length; const done = tasks.filter(t => t.status === 'Concluído').length; const pendentes = total - done; let perc = 0; if (total > 0) perc = Math.round((done / total) * 100);
+                let colorClass = 'text-[#2b3674]'; let bgClass = 'bg-white';
+                if(total === 0) { colorClass = 'text-gray-300'; bgClass = 'bg-gray-50 opacity-60 border-dashed'; } else if (perc === 100) { colorClass = 'text-green-500'; bgClass = 'bg-green-50 border-green-200'; } else if (perc < 50) { colorClass = 'text-red-500'; bgClass = 'bg-red-50 border-red-200'; } else { colorClass = 'text-blue-500'; bgClass = 'bg-blue-50 border-blue-200'; }
+                container.innerHTML += `<div class="line-card p-6 rounded-2xl text-center shadow-sm ${bgClass}"><div onclick="window.openLineDetails('${linha}')" class="flex-1"><h4 class="font-extrabold text-xl text-[#2b3674] mb-3">${linha}</h4><div class="text-6xl font-black ${colorClass} mb-3 tracking-tighter">${total === 0 ? '-' : perc + '%'}</div><p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-6 bg-white py-1 rounded-md border border-gray-100">${total === 0 ? 'Mês Livre' : pendentes + ' Pendentes'}</p></div><button onclick="window.openLineDetails('${linha}')" class="w-full bg-white border border-gray-200 text-[#2b3674] hover:bg-[#1a73e8] hover:text-white font-extrabold text-xs py-3 rounded-xl transition-all shadow-sm">👁️ Auditoria</button></div>`;
+            });
+        }
+
+        function renderLineDetails() {
+            const container = document.getElementById('machines-tasks-container'); if(!container) return; container.innerHTML = ''; const currentMonth = new Date().toISOString().slice(0,7); 
+            const tasks = allScheduleRecords.filter(t => { const matchLinha = t.linha === currentActiveLine; const matchMes = t.dataPrevista && t.dataPrevista.startsWith(currentMonth); const matchTipo = (currentScheduleType === 'Visão Global') ? true : (t.tipo === currentScheduleType); return matchLinha && matchMes && matchTipo; });
+            if(tasks.length === 0) { container.innerHTML = `<div class="p-10 text-center bg-green-50 rounded-3xl border border-green-200 shadow-inner"><span class="text-6xl block mb-6 drop-shadow-md">🏆</span><h3 class="text-3xl font-extrabold text-green-700 tracking-tight">Zero Pendências!</h3><p class="text-green-600 font-medium mt-3 text-lg">A equipe alcançou o objetivo para a Linha ${currentActiveLine}.</p></div>`; return; }
+            const porMaquina = {}; tasks.forEach(t => { if(!porMaquina[t.maquina]) porMaquina[t.maquina] = []; porMaquina[t.maquina].push(t); });
+            for(const [maquina, lista] of Object.entries(porMaquina)) {
+                let taskHtml = lista.map(t => {
+                    let isDone = t.status === 'Concluído'; let btn = '';
+                    if (!isDone && currentUserRole !== 'visitante') { btn = `<button onclick="window.abrirModalConcluir('${t.id}')" class="btn bg-green-500 hover:bg-green-600 text-white text-sm px-6 py-3 font-bold shadow-lg w-full md:w-auto mt-4 md:mt-0">Executar ✔️</button>`; } 
+                    else if(isDone) { btn = `<div class="flex items-center gap-3 mt-4 md:mt-0"><span class="bg-green-100 text-green-800 font-extrabold px-4 py-2 rounded-lg text-xs uppercase tracking-wider">Finalizado</span><button onclick="window.abrirModalAuditoria('${t.id}')" class="btn bg-white border border-blue-200 text-blue-600 text-xs px-4 py-2 hover:bg-blue-50 shadow-sm font-bold">👁️ Auditar</button></div>`; }
+                    return `<div class="flex flex-col md:flex-row md:items-center justify-between bg-white p-6 rounded-2xl mb-4 border ${isDone ? 'border-green-200 opacity-80 bg-green-50/10' : 'border-gray-100 shadow-sm hover:shadow-md transition-shadow'}"><div class="mb-2 md:mb-0"><div class="flex flex-col md:flex-row md:items-center gap-2 mb-2"><span class="font-extrabold text-[#2b3674] text-lg">${t.descricao}</span><span class="text-[9px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-md font-bold uppercase w-fit">${t.tipo}</span></div><div class="flex flex-wrap items-center gap-3"><span class="bg-gray-100 px-3 py-1 rounded-md text-xs font-bold text-gray-500">👤 ${t.tecnico}</span><span class="bg-gray-100 px-3 py-1 rounded-md text-xs font-bold text-gray-500">⚙️ ${t.pecas || 'S/ Peças'}</span><span class="text-xs font-extrabold ${isDone ? 'text-green-600' : 'text-red-500'}">🗓️ Target: ${t.dataPrevista}</span></div></div><div>${btn}</div></div>`;
+                }).join('');
+                container.innerHTML += `<div class="border-2 border-[#f4f7fe] rounded-3xl p-6 bg-[#f8fafc] mb-8 shadow-sm relative overflow-hidden"><div class="absolute left-0 top-0 bottom-0 w-2 bg-[#1a73e8]"></div><h4 class="font-extrabold text-2xl text-[#1a73e8] mb-6 flex items-center gap-3 ml-3">${maquina}</h4><div class="ml-3">${taskHtml}</div></div>`;
+            }
+        }
+        window.apagarTarefa = async (id) => { if(confirm("Apagar permanentemente?")) await deleteDoc(doc(cronogramaCollection, id)); };
+        function checkDailyNotifications() { if (notifiedToday || !currentUserNome || currentUserRole === 'visitante') return; const tStr = new Date().toISOString().slice(0,10); let n = 0; allScheduleRecords.forEach(d => { if (d.dataPrevista === tStr && d.status === 'Pendente' && (d.tecnico === currentUserNome || d.tecnico.includes('Qualquer'))) n++; }); if (n > 0) { Toastify({ text: `🚨 Tens ${n} tarefas pendentes hoje!`, duration: 10000, style: { background: "#ef4444" } }).showToast(); document.getElementById('cronograma-menu-card').innerHTML += `<div class="absolute top-2 right-2 bg-red-500 text-white rounded-full h-6 w-6 flex items-center justify-center text-xs font-bold animate-bounce border-2 border-white">${n}</div>`; notifiedToday = true; } }
+
+        // --- HISTÓRICO, PDF E EXCEL ---
+        document.getElementById('maintenance-form').addEventListener('submit', async (e) => {
+            e.preventDefault(); const btn = document.getElementById('save-maintenance-btn'); btn.disabled = true; btn.innerHTML = "<span class='animate-pulse'>Sincronizando...</span>";
+            try {
+                const files = Array.from(document.getElementById('mf-anexo').files); if (files.length > 4) { alert("⚠️ Limite 4 imagens."); btn.disabled = false; btn.textContent = "Salvar Registro"; return; }
+                let up = []; if (files.length > 0) { const opt = { maxSizeMB: 0.15, maxWidthOrHeight: 1200, useWebWorker: true }; up = (await Promise.all(files.map(async (f) => { try { const c = await imageCompression(f, opt); return { url: await toBase64(c), name: f.name }; } catch (err) { return null; } }))).filter(i => i !== null); }
+                await addDoc(maintenanceCollection, { tecnico: document.getElementById('mf-tecnico').value, tipoMaquina: document.getElementById('mf-maquina').value, linha: document.getElementById('mf-linha').value, modulo: document.getElementById('mf-modulo').value, data: document.getElementById('mf-data').value, horaInicio: document.getElementById('mf-inicio').value, horaFim: document.getElementById('mf-fim').value, tipo: document.getElementById('mf-tipo').value, correcao: document.getElementById('mf-correcao').value, causaRaiz: document.getElementById('mf-causa').value, erros: document.getElementById('mf-erros').value, registadoPor: currentUserMatricula, timestamp: serverTimestamp(), anexos: up });
+                Toastify({ text: "Inserido com Sucesso!", style: {background: "#10b981"} }).showToast(); e.target.reset(); if(currentUserRole !== 'visitante') document.getElementById('mf-tecnico').value = currentUserNome || ""; 
+            } catch(e) { alert("Falha de Conexão."); } finally { btn.disabled = false; btn.textContent = "Salvar Registro Manual"; }
+        });
+
+        function listenToMaintenanceRecords() { onSnapshot(query(maintenanceCollection, orderBy('timestamp', 'desc')), snap => { allHistoryRecords = []; snap.forEach(d => allHistoryRecords.push({ id: d.id, ...d.data() })); renderHistoryTable(); }); }
+        function renderHistoryTable() {
+            const tbody = document.getElementById('history-table-body'); tbody.innerHTML = ''; const sd = document.getElementById('filter-hist-start').value; const ed = document.getElementById('filter-hist-end').value; let rowIndex = 0; 
+            allHistoryRecords.forEach(d => {
+                if (sd && d.data < sd) return; if (ed && d.data > ed) return;
+                let rowBgClass = rowIndex % 2 === 0 ? 'bg-gray-50' : 'bg-gray-200'; rowIndex++;
+                let anexoHTML = '<span class="text-xs text-gray-500 font-bold">S/ Foto</span>'; if (d.anexos && d.anexos.length > 0) { anexoHTML = d.anexos.map((img, index) => `<button onclick="const win=window.open(); win.document.write('<div style=\\'text-align:center;background:#000;height:100vh;display:flex;align-items:center;justify-content:center;\\'><img src=\\'${img.url}\\' style=\\'max-width:90%;max-height:90%;border-radius:12px;\\'></div>');" class="bg-blue-100 text-blue-800 border border-blue-300 px-3 py-1 rounded text-[10px] font-extrabold tracking-wider hover:bg-blue-200 transition-colors mr-1 mb-1 shadow-sm inline-block">FOTO ${index+1}</button>`).join(''); }
+                let btnHtml = ''; if (currentUserRole === 'admin' || currentUserRole === 'gerente' || currentUserRole === 'lider') { btnHtml = `<button onclick="window.delRec('${d.id}')" class="text-red-700 font-extrabold text-xs bg-red-100 px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-600 hover:text-white transition-all shadow-sm">X</button>`; }
+                tbody.innerHTML += `<tr class="${rowBgClass} hover:bg-[#dbeafe] transition-colors border-b border-gray-300"><td class="p-5 font-bold text-black whitespace-nowrap">${d.data}</td><td class="p-5 text-black font-semibold">${d.tecnico}</td><td class="p-5 text-blue-800 font-black">${d.tipoMaquina} <span class="text-xs font-normal text-gray-600 block">${d.linha}</span></td><td class="p-5"><span class="bg-white border border-gray-300 text-black px-3 py-1 rounded-md text-[10px] font-extrabold tracking-wider shadow-sm">${d.tipo}</span></td><td class="p-5"><div class="mb-2 text-xs text-black font-medium"><b class="text-blue-700">Ação:</b> ${d.correcao}</div><div class="text-xs text-black"><b class="text-red-700">Causa:</b> ${d.causaRaiz || 'N/D'}</div></td><td class="p-5 text-purple-900 text-[10px] font-extrabold uppercase tracking-widest bg-purple-200 rounded px-2 border border-purple-300">${d.erros || d.pecas || 'N/A'}</td><td class="p-5">${anexoHTML}</td><td class="p-5 text-center">${btnHtml}</td></tr>`;
+            });
+        }
+        document.getElementById('btn-filter-hist').addEventListener('click', renderHistoryTable); document.getElementById('btn-clear-hist').addEventListener('click', () => { document.getElementById('filter-hist-start').value = ''; document.getElementById('filter-hist-end').value = ''; renderHistoryTable(); });
+        window.delRec = async (id) => { if(confirm("Apagar registro histórico?")) await deleteDoc(doc(maintenanceCollection, id)); };
+
+        document.getElementById('print-pdf-btn').addEventListener('click', async () => { const btn = document.getElementById('print-pdf-btn'); const origText = btn.innerHTML; btn.innerHTML = "Processando..."; document.getElementById('filter-chart-start').value = document.getElementById('filter-hist-start').value; document.getElementById('filter-chart-end').value = document.getElementById('filter-hist-end').value; const tabGraf = document.getElementById('graficos-window'); const oldClass = tabGraf.className; tabGraf.className = "window-content"; tabGraf.style.display = 'block'; tabGraf.style.position = 'absolute'; tabGraf.style.visibility = 'hidden'; tabGraf.style.zIndex = '-9999'; await renderCharts(); await new Promise(r => setTimeout(r, 1200)); const c1 = document.getElementById('manutencoesPorMaquinaChart'); const c2 = document.getElementById('manutencoesMensaisChart'); const ctx1 = c1.getContext('2d'); ctx1.globalCompositeOperation = 'destination-over'; ctx1.fillStyle = 'white'; ctx1.fillRect(0, 0, c1.width, c1.height); const ctx2 = c2.getContext('2d'); ctx2.globalCompositeOperation = 'destination-over'; ctx2.fillStyle = 'white'; ctx2.fillRect(0, 0, c2.width, c2.height); const img1Src = c1.toDataURL('image/png', 1.0); const img2Src = c2.toDataURL('image/png', 1.0); tabGraf.className = oldClass; tabGraf.style = ''; document.getElementById('app-container').style.display = 'none'; const printArea = document.createElement('div'); printArea.id = "print-area"; printArea.innerHTML = `<div style="text-align:center; margin-bottom:30px; border-bottom: 4px solid #1a73e8; padding-bottom: 15px;"><h1 style="color:#1a73e8; font-size:32px; font-weight:bold; font-family:'Helvetica Neue', sans-serif; text-transform:uppercase;">Relatório Oficial SMT</h1></div><div style="display:flex; gap:30px; justify-content:center; margin-bottom:40px; width:100%;"><div style="flex:1; text-align:center; border:1px solid #e2e8f0; padding:20px; border-radius:12px;"><h3 style="margin-bottom:15px; font-family:sans-serif; color:#2b3674; font-size: 18px;">Evolução Temporal</h3><img src="${img2Src}" style="width:100%; max-width:450px;"></div><div style="flex:1; text-align:center; border:1px solid #e2e8f0; padding:20px; border-radius:12px;"><h3 style="margin-bottom:15px; font-family:sans-serif; color:#2b3674; font-size: 18px;">Distribuição de Esforço</h3><img src="${img1Src}" style="width:100%; max-width:450px;"></div></div><h3 style="font-family:sans-serif; margin-bottom:10px; color:#2b3674; font-size: 18px;">Registro Detalhado</h3><table class="print-table"><thead><tr><th>Data Execução</th><th>Avaliador</th><th>Máquina/Ativo</th><th>Categoria</th><th>Ação / Causa</th><th>Código</th></tr></thead><tbody>${Array.from(document.getElementById('history-table-body').children).map(tr => { const c = tr.children; return `<tr><td>${c[0].innerText}</td><td>${c[1].innerText}</td><td>${c[2].innerText}</td><td>${c[3].innerText}</td><td>${c[4].innerText}</td><td>${c[5].innerText}</td></tr>`; }).join('')}</tbody></table>`; document.body.appendChild(printArea); document.body.classList.add('is-printing'); setTimeout(() => { window.print(); document.body.classList.remove('is-printing'); document.getElementById('app-container').style.display = 'block'; printArea.remove(); btn.innerHTML = origText; }, 800); });
+        
+        document.getElementById('export-excel-btn').addEventListener('click', () => {
+            const btn = document.getElementById('export-excel-btn'); btn.innerHTML = "<span class='animate-pulse'>Gerando Excel...</span>"; const sd = document.getElementById('filter-hist-start').value; const ed = document.getElementById('filter-hist-end').value; const filteredData = allHistoryRecords.filter(d => { if (sd && d.data < sd) return false; if (ed && d.data > ed) return false; return true; }); if(filteredData.length === 0) { Toastify({ text: "Sem dados para exportar!", style: {background: "#dc3545"} }).showToast(); btn.innerHTML = "📥 Exportar Excel"; return; }
+            let tableHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"></head><body><table border="1" style="border-collapse: collapse; font-family: Arial, sans-serif; width: 100%;"><thead><tr><th colspan="11" style="background-color: #1a73e8; color: #ffffff; font-size: 24px; font-weight: bold; height: 60px; text-align: center; vertical-align: middle;">RELATÓRIO TÉCNICO DE GESTÃO SMD - ${new Date().toLocaleDateString('pt-BR')}</th></tr><tr><th style="background-color: #2b3674; color: #ffffff; font-weight: bold; padding: 12px; text-align: center; width: 120px;">Data Registro</th><th style="background-color: #2b3674; color: #ffffff; font-weight: bold; padding: 12px; text-align: center; width: 160px;">Horário (Início - Fim)</th><th style="background-color: #2b3674; color: #ffffff; font-weight: bold; padding: 12px; text-align: center; width: 180px;">Colaborador</th><th style="background-color: #2b3674; color: #ffffff; font-weight: bold; padding: 12px; text-align: center; width: 150px;">Máquina Alvo</th><th style="background-color: #2b3674; color: #ffffff; font-weight: bold; padding: 12px; text-align: center; width: 100px;">Linha SMD</th><th style="background-color: #2b3674; color: #ffffff; font-weight: bold; padding: 12px; text-align: center; width: 100px;">Módulo</th><th style="background-color: #2b3674; color: #ffffff; font-weight: bold; padding: 12px; text-align: center; width: 120px;">Categoria</th><th style="background-color: #2b3674; color: #ffffff; font-weight: bold; padding: 12px; text-align: left; width: 350px;">Ação Executada (Descritivo)</th><th style="background-color: #2b3674; color: #ffffff; font-weight: bold; padding: 12px; text-align: left; width: 250px;">Causa Raiz do Problema</th><th style="background-color: #2b3674; color: #ffffff; font-weight: bold; padding: 12px; text-align: center; width: 180px;">Erros / IA</th><th style="background-color: #2b3674; color: #ffffff; font-weight: bold; padding: 12px; text-align: center; width: 120px;">Fotos Anexas?</th></tr></thead><tbody>`;
+            filteredData.forEach((d, index) => { const bg = index % 2 === 0 ? '#ffffff' : '#f4f7fe'; tableHtml += `<tr style="background-color: ${bg}; text-align: center; vertical-align: middle; height: 40px;"><td style="padding: 8px;">${d.data || '-'}</td><td style="padding: 8px; font-weight: bold;">${d.horaInicio || '--'} - ${d.horaFim || '--'}</td><td style="padding: 8px;">${d.tecnico || '-'}</td><td style="padding: 8px; font-weight: bold; color: #1a73e8;">${d.tipoMaquina || '-'}</td><td style="padding: 8px;">${d.linha || '-'}</td><td style="padding: 8px;">${d.modulo || '-'}</td><td style="padding: 8px; font-weight: bold;">${d.tipo || '-'}</td><td style="padding: 8px; text-align: left;">${d.correcao || '-'}</td><td style="padding: 8px; text-align: left; color: #d32f2f;">${d.causaRaiz || '-'}</td><td style="padding: 8px; color: #7b1fa2; font-weight: bold;">${d.erros || d.pecas || '-'}</td><td style="padding: 8px; font-weight: bold; color: ${(d.anexos && d.anexos.length > 0) ? '#2e7d32' : '#757575'};">${(d.anexos && d.anexos.length > 0) ? 'SIM' : 'NÃO'}</td></tr>`; });
+            tableHtml += `</tbody></table></body></html>`; const blob = new Blob([tableHtml], { type: 'application/vnd.ms-excel' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `Master_SMD_Audit_${new Date().toISOString().slice(0,10)}.xls`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); btn.innerHTML = "📥 Exportar Excel"; Toastify({ text: "Excel Premium Gerado com Sucesso!", style: {background: "#10b981", fontWeight: "bold"} }).showToast();
+        });
+
+        async function renderCharts() { const sd = document.getElementById('filter-chart-start').value; const ed = document.getElementById('filter-chart-end').value; const snap = await getDocs(maintenanceCollection); const mStats = {}; const monthStats = {}; let tm = 0; snap.forEach(d => { const dt = d.data(); if (sd && dt.data < sd) return; if (ed && dt.data > ed) return; mStats[dt.tipoMaquina||'N/A'] = (mStats[dt.tipoMaquina||'N/A']||0)+1; tm++; if(dt.data) monthStats[dt.data.substring(0,7)] = (monthStats[dt.data.substring(0,7)]||0)+1; }); const colors = ['#1a73e8','#ef4444','#f59e0b','#10b981','#8b5cf6','#ec4899','#14b8a6','#f97316','#0ea5e9','#6366f1','#d946ef','#64748b','#84cc16','#eab308']; const labels = Object.keys(mStats).map(k => `${k} (${((mStats[k]/tm)*100).toFixed(1)}%)`); if(window.myChart) window.myChart.destroy(); window.myChart = new Chart(document.getElementById('manutencoesPorMaquinaChart'), { type: 'doughnut', data: { labels: labels, datasets: [{ data: Object.values(mStats), backgroundColor: colors.slice(0, Object.values(mStats).length), borderWidth:2, borderColor: '#ffffff', hoverOffset: 4 }] }, options: { animation: { duration: 1500, easing: 'easeOutQuart' }, cutout: '65%', plugins: { legend: {position: 'right', labels: {font: {family: "'Plus Jakarta Sans', sans-serif", weight: 'bold'}}}, datalabels: { color: 'white', font: {weight: '900', size: 14}, formatter: v=>v, textShadowColor: 'rgba(0,0,0,0.5)', textShadowBlur: 4 } }, maintainAspectRatio: false } }); if(window.myChart2) window.myChart2.destroy(); const sMonths = Object.keys(monthStats).sort(); window.myChart2 = new Chart(document.getElementById('manutencoesMensaisChart'), { type: 'bar', data: { labels: sMonths, datasets: [{ label: 'Tarefas Finalizadas', data: sMonths.map(m=>monthStats[m]), backgroundColor: '#1a73e8', borderRadius: 6, barThickness: 40 }] }, options: { animation: { duration: 1500, easing: 'easeOutBounce' }, scales: { y: { beginAtZero: true, grid: { borderDash: [4, 4] } }, x: { grid: { display: false } } }, plugins: { legend: { display: false }, datalabels: { anchor: 'end', align: 'top', color: '#1a73e8', font: {weight: 'bold', size: 16} } }, maintainAspectRatio: false } }); }
+        document.getElementById('btn-filter-chart').addEventListener('click', renderCharts); 
+
+        // =======================================================
+        // O NOVO MOTOR DE CHAT AI (IA AUTO-ADAPTÁVEL E NATIVA)
+        // =======================================================
+        const GEMINI_API_KEY = "AIzaSyA11xPazGDQnPiNSOahKTHkA4IvRjvGCyQ"; 
+        
+        const chatBox = document.getElementById('gemini-chat-box');
+        const inputField = document.getElementById('gemini-input');
+        const btnSend = document.getElementById('btn-send-gemini');
+
+        async function sendGeminiMessage() {
+            const text = inputField.value.trim();
+            if (!text) return;
+
+            // 1. Mostrar pergunta do usuário
+            chatBox.innerHTML += `<div class="flex items-start gap-3 justify-end"><div class="bg-blue-600 text-white p-4 rounded-2xl rounded-tr-none shadow-md text-sm font-medium border border-blue-700 max-w-[80%]">${text}</div><div class="w-10 h-10 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center font-black shrink-0 border border-blue-300">TU</div></div>`;
+            inputField.value = ''; chatBox.scrollTop = chatBox.scrollHeight;
+            
+            // 2. Mostrar carregamento
+            const loadingId = 'loading-' + Date.now();
+            chatBox.innerHTML += `<div id="${loadingId}" class="flex items-start gap-3"><div class="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold shrink-0 border border-purple-200">AI</div><div class="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm text-sm text-gray-400 font-medium italic border border-gray-100 animate-pulse">Diagnosticando modelos disponíveis na sua chave...</div></div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                // 3. SCANNER DE API (Descobre qual modelo o Google liberou para você)
+                const testUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`;
+                const testRes = await fetch(testUrl);
+                const testData = await testRes.json();
+                
+                if (!testRes.ok) { throw new Error(`O Google bloqueou a chave de API. (${testData.error?.message || 'Acesso negado'}).`); }
+                if (!testData.models || testData.models.length === 0) { throw new Error(`O Google não liberou a API para esta conta. Crie a chave logado em um Gmail pessoal.`); }
+                
+                let modelName = "";
+                const availableModels = testData.models.map(m => m.name);
+                
+                // Escolhe o melhor modelo que a sua chave tem direito
+                if (availableModels.includes("models/gemini-1.5-flash")) modelName = "gemini-1.5-flash";
+                else if (availableModels.includes("models/gemini-2.0-flash")) modelName = "gemini-2.0-flash";
+                else if (availableModels.includes("models/gemini-pro")) modelName = "gemini-pro";
+                else if (availableModels.includes("models/gemini-1.0-pro")) modelName = "gemini-1.0-pro";
+                else {
+                    const fallback = testData.models.find(m => m.name.includes("gemini") && m.supportedGenerationMethods?.includes("generateContent"));
+                    if (fallback) modelName = fallback.name.replace("models/", "");
+                    else throw new Error("A sua chave é válida, mas não suporta o Chatbot.");
+                }
+
+                // 4. Pegar histórico da fábrica para dar contexto
+                let contextoExtra = "";
+                if(allHistoryRecords.length > 0) {
+                    const historicoRecente = allHistoryRecords.slice(0, 3).map(h => `${h.tipoMaquina} erro: ${h.erros}. Solução executada: ${h.correcao}`).join(" | ");
+                    contextoExtra = `\n\n[Histórico recente da fábrica: ${historicoRecente}]`;
+                }
+
+                // 5. A CHAMADA NATIVA DA API COM O MODELO CORRETO
+                const promptFinal = "ATUE COMO: Engenheiro Especialista SMT em Manaus com 20 anos de experiência. Responda de forma extremamente prática, curta e com marcadores. Se um erro for mencionado, dê 3 passos para resolver.\n\nPERGUNTA DO TÉCNICO:\n" + text + contextoExtra;
+                
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
+                
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: promptFinal }] }] })
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error?.message || "Erro durante o processamento da IA.");
+                }
+
+                const data = await response.json();
+                let mdText = data.candidates[0].content.parts[0].text;
+                
+                mdText = mdText.replace(/\*\*(.*?)\*\*/g, '<b class="text-purple-800">$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>').replace(/\n/g, '<br>');
+
+                document.getElementById(loadingId).remove();
+                chatBox.innerHTML += `<div class="flex items-start gap-3"><div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 text-white flex items-center justify-center font-bold shrink-0 shadow-lg">✨</div><div class="bg-white p-5 rounded-2xl rounded-tl-none shadow-md text-sm text-[#2b3674] border border-purple-100 font-medium leading-relaxed max-w-[90%]">${mdText}</div></div>`;
+            } catch (err) {
+                // O NOSSO AUTO-DIAGNÓSTICO NA TELA
+                document.getElementById(loadingId).remove();
+                chatBox.innerHTML += `<div class="flex items-start gap-3"><div class="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-bold shrink-0">⚠️</div><div class="bg-red-50 p-4 rounded-2xl rounded-tl-none shadow-sm text-sm text-red-700 border border-red-200 font-bold">Diagnóstico de Falha na IA:<br><span class="text-xs text-red-500 font-normal">${err.message}</span></div></div>`;
+            }
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        if(btnSend) btnSend.addEventListener('click', sendGeminiMessage);
+        if(inputField) inputField.addEventListener('keypress', (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendGeminiMessage(); } });
+
+        // --- MACHINE LEARNING TEMPOS (BRAIN.JS) ---
+        document.getElementById('train-ai-btn').addEventListener('click', async () => { const btn = document.getElementById('train-ai-btn'); btn.disabled = true; btn.innerHTML = '<span class="animate-pulse">Treinando Matrizes...</span>'; try { const data = []; allHistoryRecords.forEach(d => { if(d.tipoMaquina && d.tipo && d.horaInicio && d.horaFim) { const [h1, m1] = d.horaInicio.split(':').map(Number); const [h2, m2] = d.horaFim.split(':').map(Number); const start = h1 * 60 + m1; let end = h2 * 60 + m2; if(end < start) end += 24 * 60; let duration = end - start; if(duration > 480) duration = 480; data.push({ input: { [d.tipoMaquina]: 1, [d.tipo]: 1 }, output: { duration: duration / 480 } }); } }); if(data.length < 3) throw new Error("Coleta de Dados Insuficiente para treinar ML."); const net = new brain.NeuralNetwork({ hiddenLayers: [3, 3] }); net.train(data); trainedNet = net; document.getElementById('ai-prediction-card').classList.remove('opacity-40', 'pointer-events-none'); Toastify({ text: "Compilação da Rede OK!", style: { background: "#10b981" } }).showToast(); } catch (err) { Toastify({ text: err.message, style: { background: "#dc3545" } }).showToast(); } finally { btn.disabled = false; btn.textContent = "🔄 1. Otimizar IA com Histórico Atual"; } });
+        document.getElementById('predict-btn').addEventListener('click', () => { if(!trainedNet) return; const maquina = document.getElementById('ai-maquina').value; const tipo = document.getElementById('ai-tipo').value; if(!maquina) return; const output = trainedNet.run({ [maquina]: 1, [tipo]: 1 }); document.getElementById('ai-minutes').textContent = Math.round(output.duration * 480); document.getElementById('ai-result').classList.remove('hidden'); });
+
+        // --- ADMIN E SEGURANÇA ---
+        document.getElementById('create-user-form').addEventListener('submit', async (e) => { e.preventDefault(); const btn = e.target.querySelector('button'); btn.disabled = true; btn.textContent = 'Salvando...'; try { const email = document.getElementById('cu-matricula').value + FAKE_DOMAIN; const pass = document.getElementById('cu-password').value; const cred = await createUserWithEmailAndPassword(secondaryAuth, email, pass); await setDoc(doc(usersCollection, cred.user.uid), { nome: document.getElementById('cu-nome').value, matricula: document.getElementById('cu-matricula').value, email: email, role: document.getElementById('cu-role').value, status: 'ativo', createdAt: serverTimestamp() }); await signOut(secondaryAuth); Toastify({ text: "Perfil Criado com Sucesso.", style: { background: "#1a73e8", fontWeight: "bold" } }).showToast(); e.target.reset(); } catch(err) { alert("Senha fraca (mín. 6 letras) ou matrícula já existente."); } finally { btn.disabled = false; btn.textContent = 'Cadastrar no Sistema'; } });
+        window.updateUserRole = async (userId, newRole) => { if(confirm("Quer atualizar o nível de permissão deste técnico?")) { try { await updateDoc(doc(usersCollection, userId), { role: newRole }); Toastify({ text: "Permissão Atualizada.", style: { background: "#10b981", fontWeight: "bold" } }).showToast(); } catch(e) {} } else { listenToUsers(); } };
+        window.toggleUserStatus = async (userId, currentStatus) => { const isAtivo = currentStatus !== 'inativo'; const msg = isAtivo ? "🔒 Pretende BLOQUEAR o acesso deste técnico? Ele não poderá fazer login nem receber novas tarefas." : "🔓 Pretende RESTAURAR o acesso deste técnico ao sistema?"; if(confirm(msg)) { try { const newStatus = isAtivo ? 'inativo' : 'ativo'; await updateDoc(doc(usersCollection, userId), { status: newStatus }); Toastify({ text: `Técnico ${newStatus === 'ativo' ? 'Reativado' : 'Bloqueado'}!`, style: { background: newStatus === 'ativo' ? "#10b981" : "#ef4444", fontWeight: "bold" } }).showToast(); } catch(e) { alert("Erro ao comunicar com a Base de Dados."); } } };
+        function listenToUsers() { onSnapshot(query(usersCollection), snap => { const tbody = document.getElementById('users-table-body'); tbody.innerHTML = ''; snap.forEach(d => { const u = d.data(); const userId = d.id; if(u.matricula === "3617") return; const roleSelectHTML = `<select onchange="window.updateUserRole('${userId}', this.value)" class="form-input py-2 px-3 text-xs font-extrabold text-[#1a73e8] bg-blue-50 border-blue-100 rounded-lg shadow-sm"><option value="tecnico" ${u.role === 'tecnico' ? 'selected' : ''}>Técnico</option><option value="programador" ${u.role === 'programador' ? 'selected' : ''}>Programador</option><option value="lider" ${u.role === 'lider' ? 'selected' : ''}>Líder</option><option value="gerente" ${u.role === 'gerente' ? 'selected' : ''}>Gerente</option></select>`; const isAtivo = u.status !== 'inativo'; const badgeClass = isAtivo ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'; const badgeText = isAtivo ? '✅ ATIVO' : '❌ INATIVO'; const btnClass = isAtivo ? 'bg-red-50 text-red-600 hover:bg-red-600 hover:text-white border-red-200' : 'bg-green-50 text-green-600 hover:bg-green-600 hover:text-white border-green-200'; const btnText = isAtivo ? 'Bloquear Acesso' : 'Restaurar Acesso'; const btnIcon = isAtivo ? '🔒' : '🔓'; tbody.innerHTML += `<tr class="hover:bg-gray-50 transition-colors border-b border-gray-50"><td class="p-5 font-black text-[#2b3674] text-lg">${u.nome}</td><td class="p-5 font-bold text-gray-400">ID: ${u.matricula}</td><td class="p-5">${roleSelectHTML}</td><td class="p-5"><span class="${badgeClass} border font-bold px-3 py-1.5 rounded-lg text-[10px] tracking-widest">${badgeText}</span></td><td class="p-5 text-center"><button onclick="window.toggleUserStatus('${userId}', '${u.status || 'ativo'}')" class="btn ${btnClass} border text-xs px-4 py-2 shadow-sm font-bold transition-all w-full md:w-auto">${btnIcon} ${btnText}</button></td></tr>`; }); }); }
+    </script>
+</body>
+</html>
